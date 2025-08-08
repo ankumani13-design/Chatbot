@@ -4,4 +4,4 @@ gTTS
 SpeechRecognition
 pydub
 ffmpeg-python
-streamlit-audio-recorder==0.1.0
+
