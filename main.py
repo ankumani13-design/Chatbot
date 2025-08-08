@@ -1,5 +1,4 @@
 import streamlit as st
-from openai import OpenAI
 from gtts import gTTS
 import base64
 import io
@@ -8,12 +7,9 @@ from pydub import AudioSegment
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
 import numpy as np
 
-# === OpenAI client setup ===
-client = OpenAI(api_key="your-openai-api-key")  # Replace with your actual API key
-
-# --- Streamlit Config ---
-st.set_page_config(page_title="Voice/Text Chatbot", page_icon="🤖🎤", layout="wide")
-st.title("🤖 Voice/Text Chatbot with AI Voice Assistant")
+# Page config
+st.set_page_config(page_title="Offline Voice/Text Bot", page_icon="🎤", layout="wide")
+st.title("🎤 Offline Voice/Text Chatbot (with Automatic Voice Output)")
 
 # --- Sidebar: Chat History ---
 st.sidebar.header("Chat History")
@@ -65,16 +61,10 @@ def generate_tts_base64(text, lang):
         st.error(f"TTS Error: {e}")
         return None
 
-def ask_gpt(messages):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        return f"Error from GPT: {e}"
+def fake_assistant_response(prompt):
+    return f"You said: '{prompt}' — I am here to help you!"
 
+# --- Audio Recognition ---
 class AudioProcessor(AudioProcessorBase):
     def __init__(self):
         self.recognizer = sr.Recognizer()
@@ -111,9 +101,9 @@ def recognize_audio(frames):
 user_input = None
 
 if input_mode == "Text Input":
-    user_input = st.text_input("Type your message and press Enter:")
+    user_input = st.text_input("Enter your message:", key="text_input")
 else:
-    st.info("🎙 Speak into your mic and click '🎧 Process Voice Input'")
+    st.info("🎙 Speak into your mic, then click 'Process Voice Input'")
     ctx = webrtc_streamer(
         key="voice",
         mode=WebRtcMode.SENDONLY,
@@ -140,13 +130,14 @@ else:
 # --- Process Chat ---
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
-    with st.spinner("🤖 Assistant is responding..."):
-        bot_response = ask_gpt(st.session_state.chat_history)
+    with st.spinner("Assistant is responding..."):
+        bot_response = fake_assistant_response(user_input)
     st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
 
-    st.markdown(f"**🧑 You:** {user_input}")
-    st.markdown(f"**🤖 Assistant:** {bot_response}")
+    st.markdown(f"**You:** {user_input}")
+    st.markdown(f"**Assistant:** {bot_response}")
 
+    # --- Auto Voice Playback ---
     audio_base64 = generate_tts_base64(bot_response, tts_lang)
     if audio_base64:
         st.markdown(
