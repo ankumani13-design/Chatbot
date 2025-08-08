@@ -5,20 +5,32 @@ import base64
 import io
 import speech_recognition as sr
 from pydub import AudioSegment
+from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
 
 # === SET YOUR OPENAI API KEY HERE ===
 openai.api_key = "your-openai-api-key"
 
 # Page config
-st.set_page_config(page_title="GPT Voice/Text Chatbot", page_icon="🤖🎤")
+st.set_page_config(page_title="GPT Voice/Text Chatbot", page_icon="🤖🎤", layout="wide")
 
 st.title("🤖 GPT Voice/Text Chatbot with Voice Assistant Options")
+
+# --- Sidebar: Chat History ---
+st.sidebar.header("Chat History")
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = [{"role": "system", "content": "You are a helpful assistant."}]
+
+# Show chat history in sidebar
+for msg in st.session_state.chat_history[1:]:
+    role = "🧑 You" if msg["role"] == "user" else "🤖 Assistant"
+    st.sidebar.markdown(f"**{role}:** {msg['content']}")
 
 # --- Sidebar: Settings ---
 st.sidebar.header("Settings")
 
 # Input mode selection
-input_mode = st.sidebar.radio("Choose input mode:", ["Text Input", "Voice Upload"])
+input_mode = st.sidebar.radio("Choose input mode:", ["Text Input", "Voice Input"])
 
 # Output language options for TTS
 lang_options = {
@@ -48,25 +60,7 @@ voice_style = st.sidebar.selectbox("Voice Assistant Style:", list(voice_styles.k
 # Resolve actual language code for gTTS
 tts_lang = voice_styles[voice_style]
 
-# --- Session state for chat ---
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [{"role": "system", "content": "You are a helpful assistant."}]
-
 # --- Helper Functions ---
-
-def transcribe_audio(uploaded_file):
-    try:
-        audio = AudioSegment.from_file(uploaded_file)
-        wav_io = io.BytesIO()
-        audio.export(wav_io, format="wav")
-        wav_io.seek(0)
-        recognizer = sr.Recognizer()
-        with sr.AudioFile(wav_io) as source:
-            audio_data = recognizer.record(source)
-            # Use default English recognition for transcription
-            return recognizer.recognize_google(audio_data)
-    except Exception as e:
-        return f"Error during transcription: {e}"
 
 def generate_tts_base64(text, lang):
     try:
@@ -86,22 +80,71 @@ def ask_gpt(messages):
     )
     return response.choices[0].message.content
 
-# --- Input UI ---
+# --- Voice Recognition with streamlit-webrtc ---
+
+class AudioProcessor(AudioProcessorBase):
+    def __init__(self):
+        self.recognizer = sr.Recognizer()
+        self.frames = []
+
+    def recv(self, frame):
+        audio = frame.to_ndarray(format="int16")
+        self.frames.append(audio)
+        return frame
+
+def recognize_audio(frames):
+    try:
+        # Combine frames to bytes
+        import numpy as np
+        audio_np = np.concatenate(frames)
+        audio_bytes = audio_np.tobytes()
+        
+        # Convert bytes to audio file for SpeechRecognition
+        audio_file = io.BytesIO()
+        audio_segment = AudioSegment(
+            audio_bytes,
+            frame_rate=48000,
+            sample_width=2,  # int16 = 2 bytes
+            channels=1
+        )
+        audio_segment.export(audio_file, format="wav")
+        audio_file.seek(0)
+
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(audio_file) as source:
+            audio_data = recognizer.record(source)
+            text = recognizer.recognize_google(audio_data)
+            return text
+    except Exception as e:
+        return f"Error during recognition: {e}"
+
+# --- Main Input UI ---
 
 user_input = None
 
 if input_mode == "Text Input":
     user_input = st.text_input("Type your message:")
 else:
-    uploaded_audio = st.file_uploader("Upload your voice (mp3 or wav):", type=["mp3", "wav"])
-    if uploaded_audio is not None:
-        with st.spinner("Transcribing audio..."):
-            transcribed_text = transcribe_audio(uploaded_audio)
-            if transcribed_text.startswith("Error"):
-                st.error(transcribed_text)
+    st.info("Click the Start button and speak. Press Stop when done.")
+    ctx = webrtc_streamer(
+        key="voice-input",
+        mode=WebRtcMode.SENDONLY,
+        audio_receiver_size=256,
+    )
+
+    if ctx.audio_receiver:
+        audio_frames = []
+        for i in range(5):  # Capture a few frames
+            audio_frame = ctx.audio_receiver.get_frames(timeout=1)
+            if audio_frame:
+                audio_frames.extend([f.to_ndarray() for f in audio_frame])
+        if audio_frames:
+            recognized_text = recognize_audio(audio_frames)
+            if recognized_text.startswith("Error"):
+                st.error(recognized_text)
             else:
-                st.success(f"Transcribed: {transcribed_text}")
-                user_input = transcribed_text
+                st.success(f"Recognized: {recognized_text}")
+                user_input = recognized_text
 
 # --- Process input and chat ---
 
@@ -111,7 +154,7 @@ if user_input:
         bot_response = ask_gpt(st.session_state.chat_history)
     st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
 
-    # Display conversation
+    # Display conversation in main area
     st.markdown(f"**You:** {user_input}")
     st.markdown(f"**Assistant:** {bot_response}")
 
@@ -126,9 +169,3 @@ if user_input:
             """,
             unsafe_allow_html=True,
         )
-
-# --- Show full chat history ---
-with st.expander("Show full chat history"):
-    for msg in st.session_state.chat_history[1:]:
-        role = "🧑 You" if msg["role"] == "user" else "🤖 Assistant"
-        st.markdown(f"**{role}:** {msg['content']}")
