@@ -12,7 +12,6 @@ openai.api_key = "your-openai-api-key"
 
 # Page config
 st.set_page_config(page_title="GPT Voice/Text Chatbot", page_icon="🤖🎤", layout="wide")
-
 st.title("🤖 GPT Voice/Text Chatbot with Voice Assistant Options")
 
 # --- Sidebar: Chat History ---
@@ -21,7 +20,6 @@ st.sidebar.header("Chat History")
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [{"role": "system", "content": "You are a helpful assistant."}]
 
-# Show chat history in sidebar
 for msg in st.session_state.chat_history[1:]:
     role = "🧑 You" if msg["role"] == "user" else "🤖 Assistant"
     st.sidebar.markdown(f"**{role}:** {msg['content']}")
@@ -29,10 +27,8 @@ for msg in st.session_state.chat_history[1:]:
 # --- Sidebar: Settings ---
 st.sidebar.header("Settings")
 
-# Input mode selection
 input_mode = st.sidebar.radio("Choose input mode:", ["Text Input", "Voice Input"])
 
-# Output language options for TTS
 lang_options = {
     "en": "English",
     "en-au": "English (Australia)",
@@ -47,7 +43,6 @@ lang_options = {
 
 output_lang = st.sidebar.selectbox("Voice Output Language:", list(lang_options.keys()), format_func=lambda k: lang_options[k])
 
-# Voice assistant style (simulated by TTS language accent variants)
 voice_styles = {
     "Default": output_lang,
     "Formal": "en-uk" if output_lang.startswith("en") else output_lang,
@@ -56,12 +51,9 @@ voice_styles = {
 }
 
 voice_style = st.sidebar.selectbox("Voice Assistant Style:", list(voice_styles.keys()))
-
-# Resolve actual language code for gTTS
 tts_lang = voice_styles[voice_style]
 
 # --- Helper Functions ---
-
 def generate_tts_base64(text, lang):
     try:
         tts = gTTS(text=text, lang=lang)
@@ -85,12 +77,11 @@ def recognize_audio(frames):
         import numpy as np
         audio_np = np.concatenate(frames)
         audio_bytes = audio_np.tobytes()
-        
         audio_file = io.BytesIO()
         audio_segment = AudioSegment(
             audio_bytes,
             frame_rate=48000,
-            sample_width=2,  # int16 = 2 bytes
+            sample_width=2,
             channels=1
         )
         audio_segment.export(audio_file, format="wav")
@@ -99,63 +90,66 @@ def recognize_audio(frames):
         recognizer = sr.Recognizer()
         with sr.AudioFile(audio_file) as source:
             audio_data = recognizer.record(source)
-            text = recognizer.recognize_google(audio_data)
-            return text
+            return recognizer.recognize_google(audio_data)
     except Exception as e:
         return f"Error during recognition: {e}"
 
-# --- Main Input UI ---
+# --- Main Logic ---
+if "text_buffer" not in st.session_state:
+    st.session_state.text_buffer = ""
 
 user_input = None
 
-if input_mode == "Text Input":
-    user_input = st.text_input("Type your message:")
-else:
-    st.info("Speak into your mic. When done, click 'Process Voice Input' to transcribe.")
+if input_mode == "Text Input" or input_mode == "Voice Input":
+    col1, col2 = st.columns([5, 1])
 
-    ctx = webrtc_streamer(
-        key="voice-input",
-        mode=WebRtcMode.SENDONLY,
-        audio_receiver_size=256,
-        media_stream_constraints={"audio": True, "video": False},
-    )
+    with col1:
+        user_input = st.text_input("Enter or edit your message here:", value=st.session_state.text_buffer, key="text_input")
 
-    if "audio_frames" not in st.session_state:
-        st.session_state.audio_frames = []
+    with col2:
+        if input_mode == "Voice Input":
+            if "audio_frames" not in st.session_state:
+                st.session_state.audio_frames = []
 
-    if ctx.audio_receiver:
-        try:
-            audio_frames = ctx.audio_receiver.get_frames(timeout=1)
-            if audio_frames:
-                st.session_state.audio_frames.extend([f.to_ndarray() for f in audio_frames])
-        except:
-            pass  # timeout errors ignored
+            ctx = webrtc_streamer(
+                key="voice-capture",
+                mode=WebRtcMode.SENDONLY,
+                audio_receiver_size=256,
+                media_stream_constraints={"audio": True, "video": False},
+            )
 
-    if st.button("Process Voice Input"):
-        if st.session_state.audio_frames:
-            recognized_text = recognize_audio(st.session_state.audio_frames)
-            if recognized_text.startswith("Error"):
-                st.error(recognized_text)
-            else:
-                st.success(f"Recognized: {recognized_text}")
-                user_input = recognized_text
-            st.session_state.audio_frames = []  # reset after processing
-        else:
-            st.warning("No audio captured yet. Please speak into the microphone.")
+            if ctx.audio_receiver:
+                try:
+                    audio_frames = ctx.audio_receiver.get_frames(timeout=1)
+                    if audio_frames:
+                        st.session_state.audio_frames.extend([f.to_ndarray() for f in audio_frames])
+                except:
+                    pass  # timeout okay
 
-# --- Process input and chat ---
+            if st.button("🎤 Process Voice Input"):
+                if st.session_state.audio_frames:
+                    recognized_text = recognize_audio(st.session_state.audio_frames)
+                    if recognized_text.startswith("Error"):
+                        st.error(recognized_text)
+                    else:
+                        st.success(f"Recognized: {recognized_text}")
+                        # Update input box with recognized text
+                        st.session_state.text_buffer = recognized_text
+                        st.experimental_rerun()  # Reload to show in text_input
+                    st.session_state.audio_frames = []
+                else:
+                    st.warning("No audio captured yet.")
 
-if user_input:
+# --- GPT Processing ---
+if user_input and user_input.strip():
     st.session_state.chat_history.append({"role": "user", "content": user_input})
     with st.spinner("GPT is thinking..."):
         bot_response = ask_gpt(st.session_state.chat_history)
     st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
 
-    # Display conversation in main area
     st.markdown(f"**You:** {user_input}")
     st.markdown(f"**Assistant:** {bot_response}")
 
-    # Play TTS voice output
     audio_base64 = generate_tts_base64(bot_response, tts_lang)
     if audio_base64:
         st.markdown(
@@ -166,3 +160,7 @@ if user_input:
             """,
             unsafe_allow_html=True,
         )
+
+    # Reset buffer after submission
+    st.session_state.text_buffer = ""
+    st.experimental_rerun()
