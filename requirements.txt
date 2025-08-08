@@ -1,7 +1,7 @@
 streamlit
-gtts
-SpeechRecognition
+openai>=1.0.0
+gTTS
 pydub
+SpeechRecognition
 streamlit-webrtc
 numpy
-openai
