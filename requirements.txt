@@ -1,6 +1,7 @@
+openai
 streamlit
-wikipedia
-gTTS
-SpeechRecognition
+gtts
 pydub
+SpeechRecognition
 ffmpeg-python
+
