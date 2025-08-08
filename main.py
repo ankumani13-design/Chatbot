@@ -6,10 +6,11 @@ import speech_recognition as sr
 from pydub import AudioSegment
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
 import numpy as np
+import re
 
 # Page config
-st.set_page_config(page_title="Offline Voice/Text Bot", page_icon="🎤", layout="wide")
-st.title("🎤 Offline Voice/Text Chatbot (with Automatic Voice Output)")
+st.set_page_config(page_title="Voice/Text Chatbot", page_icon="🤖🎤", layout="wide")
+st.title("🤖 Voice/Text Chatbot with Voice Assistant Options")
 
 # --- Sidebar: Chat History ---
 st.sidebar.header("Chat History")
@@ -50,9 +51,23 @@ tts_lang = voice_styles[voice_style]
 
 # --- Helper Functions ---
 
+def split_text(text, max_length=100):
+    sentences = re.split(r'(?<=[.!?]) +', text)
+    chunks = []
+    current_chunk = ""
+    for sentence in sentences:
+        if len(current_chunk) + len(sentence) < max_length:
+            current_chunk += sentence + " "
+        else:
+            chunks.append(current_chunk.strip())
+            current_chunk = sentence + " "
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    return chunks
+
 def generate_tts_base64(text, lang):
     try:
-        tts = gTTS(text=text, lang=lang)
+        tts = gTTS(text=text, lang=lang, slow=False)  # natural speed
         mp3_fp = io.BytesIO()
         tts.write_to_fp(mp3_fp)
         mp3_fp.seek(0)
@@ -62,9 +77,11 @@ def generate_tts_base64(text, lang):
         return None
 
 def fake_assistant_response(prompt):
-    return f" '{prompt}' — I am here to help you!"
+    # Mock response for demo
+    return "This is a sample response to: " + prompt
 
 # --- Audio Recognition ---
+
 class AudioProcessor(AudioProcessorBase):
     def __init__(self):
         self.recognizer = sr.Recognizer()
@@ -101,9 +118,9 @@ def recognize_audio(frames):
 user_input = None
 
 if input_mode == "Text Input":
-    user_input = st.text_input("Enter your message:", key="text_input")
+    user_input = st.text_input("Enter or edit your message here:", key="text_input")
 else:
-    st.info("🎙 Speak into your mic, then click 'Process Voice Input'")
+    st.info("🎙 Speak into your mic and then click '🎧 Process Voice Input'")
     ctx = webrtc_streamer(
         key="voice",
         mode=WebRtcMode.SENDONLY,
@@ -137,15 +154,17 @@ if user_input:
     st.markdown(f"**You:** {user_input}")
     st.markdown(f"**Assistant:** {bot_response}")
 
-    # --- Auto Voice Playback ---
-    audio_base64 = generate_tts_base64(bot_response, tts_lang)
-    if audio_base64:
-        st.markdown(
-            f"""
-            <audio autoplay style="display:none">
-                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-            </audio>
-            """,
-            unsafe_allow_html=True,
-        )
+    # Split response for clearer TTS
+    chunks = split_text(bot_response, max_length=100)
 
+    for chunk in chunks:
+        audio_base64 = generate_tts_base64(chunk, tts_lang)
+        if audio_base64:
+            st.markdown(
+                f"""
+                <audio autoplay style="display:none">
+                    <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+                </audio>
+                """,
+                unsafe_allow_html=True,
+            )
