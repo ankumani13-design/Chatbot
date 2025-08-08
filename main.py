@@ -5,12 +5,14 @@ import io
 import base64
 import speech_recognition as sr
 from pydub import AudioSegment
+import webbrowser
 
-# Config
+# ------------------ PAGE CONFIG ------------------
 st.set_page_config(page_title="Wikipedia Voice Chatbot", page_icon="🎙️")
 st.title("🎙️ Wikipedia Voice Chatbot")
 
-# Language options
+# ------------------ SIDEBAR ------------------
+st.sidebar.title("Settings")
 language_options = {
     "en": "English",
     "hi": "Hindi",
@@ -19,10 +21,14 @@ language_options = {
     "de": "German",
     "ja": "Japanese"
 }
+selected_lang = st.sidebar.selectbox("🌍 Choose Language", list(language_options.keys()),
+                                     format_func=lambda x: language_options[x])
 
-selected_lang = st.selectbox("🌍 Choose language:", list(language_options.keys()), format_func=lambda x: language_options[x])
+# ------------------ CONVERSATION HISTORY ------------------
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-# Get Wikipedia summary
+# ------------------ WIKIPEDIA SEARCH ------------------
 def get_summary(query, lang):
     try:
         wikipedia.set_lang(lang)
@@ -36,7 +42,7 @@ def get_summary(query, lang):
     except:
         return "Something went wrong."
 
-# Convert text to speech
+# ------------------ TTS ------------------
 def speak(text, lang):
     try:
         tts = gTTS(text=text, lang=lang)
@@ -47,7 +53,7 @@ def speak(text, lang):
     except:
         return None
 
-# Transcribe uploaded audio
+# ------------------ SPEECH TO TEXT ------------------
 def transcribe(audio_file, lang):
     try:
         audio = AudioSegment.from_file(audio_file)
@@ -61,7 +67,16 @@ def transcribe(audio_file, lang):
     except:
         return None
 
-# User input
+# ------------------ SPECIAL COMMANDS ------------------
+def handle_special_commands(text):
+    text = text.lower()
+    if "open google" in text:
+        return "Opening Google... [Click here](https://www.google.com)", "https://www.google.com"
+    elif "open youtube" in text:
+        return "Opening YouTube... [Click here](https://www.youtube.com)", "https://www.youtube.com"
+    return None, None
+
+# ------------------ USER INPUT ------------------
 st.markdown("### 💬 Type your question:")
 text_input = st.text_input("")
 
@@ -81,20 +96,32 @@ elif audio_file:
         else:
             st.error("Sorry, couldn't recognize the audio.")
 
-# Show bot response
+# ------------------ RESPONSE ------------------
 if user_query:
-    st.markdown(f"**You:** {user_query}")
-    reply = get_summary(user_query, selected_lang)
-    st.markdown(f"**Bot:** {reply}")
+    st.session_state.chat_history.append(("user", user_query))
 
-    # Speak response
-    audio_base64 = speak(reply, selected_lang)
-    if audio_base64:
-        st.markdown(
-            f"""
-            <audio autoplay controls style="display:none;">
-                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-            </audio>
-            """,
-            unsafe_allow_html=True
-        )
+    # Handle commands
+    special_reply, link = handle_special_commands(user_query)
+    if special_reply:
+        bot_reply = special_reply
+    else:
+        bot_reply = get_summary(user_query, selected_lang)
+
+    st.session_state.chat_history.append(("bot", bot_reply))
+
+# ------------------ CHAT HISTORY ------------------
+for role, message in st.session_state.chat_history:
+    if role == "user":
+        st.markdown(f"**🧑 You:** {message}")
+    else:
+        st.markdown(f"**🤖 Bot:** {message}")
+        audio_base64 = speak(message, selected_lang)
+        if audio_base64:
+            st.markdown(
+                f"""
+                <audio autoplay controls style="display:none;">
+                    <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+                </audio>
+                """,
+                unsafe_allow_html=True
+            )
