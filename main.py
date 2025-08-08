@@ -62,7 +62,7 @@ def generate_tts_base64(text, lang):
         return None
 
 def fake_assistant_response(prompt):
-    return f"You said: '{prompt}' — I am here to help you!"
+    return f" '{prompt}' — I am here to help you!"
 
 # --- Audio Recognition ---
 class AudioProcessor(AudioProcessorBase):
@@ -148,3 +148,4 @@ if user_input:
             """,
             unsafe_allow_html=True,
         )
+
