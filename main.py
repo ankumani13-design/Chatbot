@@ -5,7 +5,7 @@ import base64
 import io
 import speech_recognition as sr
 from pydub import AudioSegment
-from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
+from streamlit_webrtc import webrtc_streamer, WebRtcMode
 
 # === SET YOUR OPENAI API KEY HERE ===
 openai.api_key = "your-openai-api-key"
@@ -80,26 +80,12 @@ def ask_gpt(messages):
     )
     return response.choices[0].message.content
 
-# --- Voice Recognition with streamlit-webrtc ---
-
-class AudioProcessor(AudioProcessorBase):
-    def __init__(self):
-        self.recognizer = sr.Recognizer()
-        self.frames = []
-
-    def recv(self, frame):
-        audio = frame.to_ndarray(format="int16")
-        self.frames.append(audio)
-        return frame
-
 def recognize_audio(frames):
     try:
-        # Combine frames to bytes
         import numpy as np
         audio_np = np.concatenate(frames)
         audio_bytes = audio_np.tobytes()
         
-        # Convert bytes to audio file for SpeechRecognition
         audio_file = io.BytesIO()
         audio_segment = AudioSegment(
             audio_bytes,
@@ -125,26 +111,37 @@ user_input = None
 if input_mode == "Text Input":
     user_input = st.text_input("Type your message:")
 else:
-    st.info("Click the Start button and speak. Press Stop when done.")
+    st.info("Speak into your mic. When done, click 'Process Voice Input' to transcribe.")
+
     ctx = webrtc_streamer(
         key="voice-input",
         mode=WebRtcMode.SENDONLY,
         audio_receiver_size=256,
+        media_stream_constraints={"audio": True, "video": False},
     )
 
+    if "audio_frames" not in st.session_state:
+        st.session_state.audio_frames = []
+
     if ctx.audio_receiver:
-        audio_frames = []
-        for i in range(5):  # Capture a few frames
-            audio_frame = ctx.audio_receiver.get_frames(timeout=1)
-            if audio_frame:
-                audio_frames.extend([f.to_ndarray() for f in audio_frame])
-        if audio_frames:
-            recognized_text = recognize_audio(audio_frames)
+        try:
+            audio_frames = ctx.audio_receiver.get_frames(timeout=1)
+            if audio_frames:
+                st.session_state.audio_frames.extend([f.to_ndarray() for f in audio_frames])
+        except:
+            pass  # timeout errors ignored
+
+    if st.button("Process Voice Input"):
+        if st.session_state.audio_frames:
+            recognized_text = recognize_audio(st.session_state.audio_frames)
             if recognized_text.startswith("Error"):
                 st.error(recognized_text)
             else:
                 st.success(f"Recognized: {recognized_text}")
                 user_input = recognized_text
+            st.session_state.audio_frames = []  # reset after processing
+        else:
+            st.warning("No audio captured yet. Please speak into the microphone.")
 
 # --- Process input and chat ---
 
