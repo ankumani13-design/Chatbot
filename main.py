@@ -141,7 +141,7 @@ if user_input:
     st.markdown(f"**You:** {user_input}")
     st.markdown(f"**Assistant:** {bot_response}")
 
-    # --- TTS Playback ---
+    # --- Auto Voice Output (No play button) ---
     audio_base64 = generate_tts_base64(bot_response, tts_lang)
     if audio_base64:
         st.markdown(
@@ -152,4 +152,3 @@ if user_input:
             """,
             unsafe_allow_html=True,
         )
-        st.audio(f"data:audio/mp3;base64,{audio_base64}", format="audio/mp3", start_time=0)
