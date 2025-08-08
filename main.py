@@ -6,15 +6,11 @@ import base64
 import speech_recognition as sr
 from pydub import AudioSegment
 
-# Page config
+# Config
 st.set_page_config(page_title="Wikipedia Voice Chatbot", page_icon="🎙️")
-st.title("🎙️ Wikipedia Voice Chatbot with Text, File Upload & Language Switching")
+st.title("🎙️ Wikipedia Voice Chatbot")
 
-# Initialize session state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# Supported languages
+# Language options
 language_options = {
     "en": "English",
     "hi": "Hindi",
@@ -24,87 +20,81 @@ language_options = {
     "ja": "Japanese"
 }
 
-selected_lang = st.selectbox("🌐 Choose language:", list(language_options.keys()), format_func=lambda x: language_options[x])
+selected_lang = st.selectbox("🌍 Choose language:", list(language_options.keys()), format_func=lambda x: language_options[x])
 
-# Wikipedia summary
-def get_wikipedia_summary(query, lang):
+# Get Wikipedia summary
+def get_summary(query, lang):
     try:
         wikipedia.set_lang(lang)
         results = wikipedia.search(query)
         if not results:
             return "Sorry, I couldn't find anything on that topic."
-        summary = wikipedia.summary(results[0], sentences=2, auto_suggest=False, redirect=True)
+        summary = wikipedia.summary(results[0], sentences=2)
         return summary
     except wikipedia.DisambiguationError as e:
-        return f"Your query is ambiguous. Did you mean: {', '.join(e.options[:5])}?"
-    except wikipedia.PageError:
-        return "Sorry, I couldn't find a page matching your query."
-    except Exception:
-        return "Oops, something went wrong."
+        return f"Did you mean: {', '.join(e.options[:5])}?"
+    except:
+        return "Something went wrong."
 
-# Text-to-speech
-def text_to_speech_base64(text, lang):
-    tts = gTTS(text=text, lang=lang)
-    mp3_fp = io.BytesIO()
-    tts.write_to_fp(mp3_fp)
-    mp3_fp.seek(0)
-    audio_base64 = base64.b64encode(mp3_fp.read()).decode("utf-8")
-    return audio_base64
+# Convert text to speech
+def speak(text, lang):
+    try:
+        tts = gTTS(text=text, lang=lang)
+        mp3 = io.BytesIO()
+        tts.write_to_fp(mp3)
+        mp3.seek(0)
+        return base64.b64encode(mp3.read()).decode("utf-8")
+    except:
+        return None
 
 # Transcribe uploaded audio
-def transcribe_audio(uploaded_file, lang_code):
+def transcribe(audio_file, lang):
     try:
-        audio = AudioSegment.from_file(uploaded_file)
-        wav_io = io.BytesIO()
-        audio.export(wav_io, format="wav")
-        wav_io.seek(0)
-
+        audio = AudioSegment.from_file(audio_file)
+        wav = io.BytesIO()
+        audio.export(wav, format="wav")
+        wav.seek(0)
         recognizer = sr.Recognizer()
-        with sr.AudioFile(wav_io) as source:
+        with sr.AudioFile(wav) as source:
             audio_data = recognizer.record(source)
-            text = recognizer.recognize_google(audio_data, language=lang_code)
-            return text
-    except Exception as e:
-        return f"Error: {str(e)}"
+            return recognizer.recognize_google(audio_data, language=lang)
+    except:
+        return None
 
-# File upload for voice input
-st.markdown("### 🎤 Upload your voice (MP3/WAV):")
-voice_file = st.file_uploader("Upload audio", type=["wav", "mp3"])
+# User input
+st.markdown("### 💬 Type your question:")
+text_input = st.text_input("")
 
-user_input = None
+st.markdown("### 🎤 Or upload your voice (MP3 or WAV):")
+audio_file = st.file_uploader("Upload voice", type=["mp3", "wav"])
 
-if voice_file:
-    with st.spinner("Transcribing voice..."):
-        user_input = transcribe_audio(voice_file, selected_lang)
-        if user_input.startswith("Error"):
-            st.error(user_input)
-            user_input = None
+user_query = None
+
+if text_input:
+    user_query = text_input
+elif audio_file:
+    with st.spinner("Transcribing..."):
+        result = transcribe(audio_file, selected_lang)
+        if result:
+            st.success(f"Recognized: {result}")
+            user_query = result
         else:
-            st.success(f"Recognized: {user_input}")
+            st.error("Sorry, couldn't recognize the audio.")
 
-# Text input fallback
-typed_input = st.text_input("💬 Or type your question here:")
+# Show bot response
+if user_query:
+    st.markdown(f"**You:** {user_query}")
+    reply = get_summary(user_query, selected_lang)
+    st.markdown(f"**Bot:** {reply}")
 
-if typed_input:
-    user_input = typed_input
-
-# Process input
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    bot_reply = get_wikipedia_summary(user_input, selected_lang)
-    st.session_state.messages.append({"role": "bot", "content": bot_reply})
-
-# Display conversation
-for i, msg in enumerate(st.session_state.messages):
-    if msg["role"] == "user":
-        st.markdown(f"**You:** {msg['content']}")
-    else:
-        st.markdown(f"**Bot:** {msg['content']}")
-        if i == len(st.session_state.messages) - 1:
-            audio_base64 = text_to_speech_base64(msg["content"], selected_lang)
-            audio_html = f"""
-                <audio autoplay controls style="display:none;">
-                    <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                </audio>
-            """
-            st.markdown(audio_html, unsafe_allow_html=True)
+    # Speak response
+    audio_base64 = speak(reply, selected_lang)
+    if audio_base64:
+        st.markdown(
+            f"""
+            <audio autoplay controls style="display:none;">
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+            """,
+            unsafe_allow_html=True
+        )
