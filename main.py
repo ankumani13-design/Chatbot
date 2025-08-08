@@ -65,7 +65,7 @@ def generate_tts_base64(text, lang):
         return None
 
 def fake_assistant_response(prompt):
-    # Mock response instead of calling OpenAI
+    # Placeholder for actual assistant logic
     return "This is a sample response to: " + prompt
 
 # --- Audio Recognition ---
@@ -107,7 +107,7 @@ user_input = None
 if input_mode == "Text Input":
     user_input = st.text_input("Enter or edit your message here:", key="text_input")
 else:
-    st.info("🎙 Speak into your mic and then click '🎧 Process Voice Input'")
+    st.info("🎙 Speak into your mic and click '🎧 Process Voice Input'")
     ctx = webrtc_streamer(
         key="voice",
         mode=WebRtcMode.SENDONLY,
@@ -141,7 +141,7 @@ if user_input:
     st.markdown(f"**You:** {user_input}")
     st.markdown(f"**Assistant:** {bot_response}")
 
-    # --- TTS Playback ---
+    # --- TTS Auto Playback ---
     audio_base64 = generate_tts_base64(bot_response, tts_lang)
     if audio_base64:
         st.markdown(
@@ -152,4 +152,3 @@ if user_input:
             """,
             unsafe_allow_html=True,
         )
-        st.audio(f"data:audio/mp3;base64,{audio_base64}", format="audio/mp3", start_time=0)
