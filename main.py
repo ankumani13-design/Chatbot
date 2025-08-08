@@ -1,5 +1,4 @@
 import streamlit as st
-import openai
 from gtts import gTTS
 import base64
 import io
@@ -7,14 +6,10 @@ import speech_recognition as sr
 from pydub import AudioSegment
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
 import numpy as np
-import os
-
-# === OpenAI SDK v1.x ===
-client = openai.OpenAI(api_key="your-openai-api-key")  # Replace with your actual key
 
 # Page config
-st.set_page_config(page_title="GPT Voice/Text Chatbot", page_icon="🤖🎤", layout="wide")
-st.title("🤖 GPT Voice/Text Chatbot with Voice Assistant Options")
+st.set_page_config(page_title="Voice/Text Chatbot", page_icon="🤖🎤", layout="wide")
+st.title("🤖 Voice/Text Chatbot with Voice Assistant Options")
 
 # --- Sidebar: Chat History ---
 st.sidebar.header("Chat History")
@@ -22,6 +17,7 @@ st.sidebar.header("Chat History")
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [{"role": "system", "content": "You are a helpful assistant."}]
 
+# Show chat history in sidebar
 for msg in st.session_state.chat_history[1:]:
     role = "🧑 You" if msg["role"] == "user" else "🤖 Assistant"
     st.sidebar.markdown(f"**{role}:** {msg['content']}")
@@ -31,6 +27,7 @@ st.sidebar.header("Settings")
 
 input_mode = st.sidebar.radio("Choose input mode:", ["Text Input", "Voice Input"])
 
+# TTS output language options
 lang_options = {
     "en": "English",
     "en-au": "English (Australia)",
@@ -44,6 +41,7 @@ lang_options = {
 }
 output_lang = st.sidebar.selectbox("Voice Output Language:", list(lang_options.keys()), format_func=lambda k: lang_options[k])
 
+# Voice assistant style options
 voice_styles = {
     "Default": output_lang,
     "Formal": "en-uk" if output_lang.startswith("en") else output_lang,
@@ -66,12 +64,9 @@ def generate_tts_base64(text, lang):
         st.error(f"TTS Error: {e}")
         return None
 
-def ask_gpt(messages):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=messages
-    )
-    return response.choices[0].message.content
+def fake_assistant_response(prompt):
+    # Mock response instead of calling OpenAI
+    return "This is a sample response to: " + prompt
 
 # --- Audio Recognition ---
 class AudioProcessor(AudioProcessorBase):
@@ -88,7 +83,6 @@ def recognize_audio(frames):
     try:
         audio_np = np.concatenate(frames)
         audio_bytes = audio_np.tobytes()
-
         audio_file = io.BytesIO()
         audio_segment = AudioSegment(
             audio_bytes,
@@ -113,7 +107,7 @@ user_input = None
 if input_mode == "Text Input":
     user_input = st.text_input("Enter or edit your message here:", key="text_input")
 else:
-    st.info("🎙 Speak into your mic, and click 'Process Voice Input' when done.")
+    st.info("🎙 Speak into your mic and then click '🎧 Process Voice Input'")
     ctx = webrtc_streamer(
         key="voice",
         mode=WebRtcMode.SENDONLY,
@@ -140,20 +134,22 @@ else:
 # --- Process Chat ---
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
-    with st.spinner("GPT is thinking..."):
-        bot_response = ask_gpt(st.session_state.chat_history)
+    with st.spinner("Assistant is responding..."):
+        bot_response = fake_assistant_response(user_input)
     st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
 
     st.markdown(f"**You:** {user_input}")
     st.markdown(f"**Assistant:** {bot_response}")
 
+    # --- TTS Playback ---
     audio_base64 = generate_tts_base64(bot_response, tts_lang)
     if audio_base64:
         st.markdown(
             f"""
-            <audio autoplay controls style="display:none">
+            <audio autoplay style="display:none">
                 <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
             </audio>
             """,
             unsafe_allow_html=True,
         )
+        st.audio(f"data:audio/mp3;base64,{audio_base64}", format="audio/mp3", start_time=0)
