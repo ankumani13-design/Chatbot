@@ -1,3 +1,6 @@
 streamlit
 wikipedia
 gTTS
+SpeechRecognition
+pydub
+ffmpeg-python
