@@ -6,23 +6,19 @@ import io
 from pydub import AudioSegment
 import speech_recognition as sr
 
+# 👉 Set your API key directly here (be careful with public repos!)
+openai.api_key = "your-openai-api-key"  # 🔒 Replace with your actual key
+
 # Page config
 st.set_page_config(page_title="GPT Voice Chatbot", page_icon="🎤")
 st.title("🧠 GPT Voice Chatbot with Text & Voice")
 
-# Sidebar settings
-st.sidebar.title("🔐 API & Language Settings")
-api_key = st.sidebar.text_input("OpenAI API Key", type="password")
-language = st.sidebar.selectbox("🌐 Voice Output Language", {
+# Sidebar language selection
+st.sidebar.title("🌐 Language Settings")
+language = st.sidebar.selectbox("Voice Output Language", {
     "en": "English", "hi": "Hindi", "es": "Spanish", 
     "fr": "French", "de": "German", "ja": "Japanese"
 })
-
-if not api_key:
-    st.warning("Please enter your OpenAI API key in the sidebar.")
-    st.stop()
-
-openai.api_key = api_key
 
 # Session state for conversation
 if "chat_history" not in st.session_state:
@@ -71,7 +67,7 @@ st.subheader("🎙️ Speak or Type Your Message")
 
 user_input = None
 
-# Live voice recording (Streamlit mic input)
+# Voice input (via upload)
 audio_input = st.audio(label="🎧 Record your voice or upload MP3/WAV", format="audio/wav")
 uploaded_audio = st.file_uploader("Or upload an audio file", type=["mp3", "wav"])
 
