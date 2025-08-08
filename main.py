@@ -1,5 +1,5 @@
 import streamlit as st
-import openai
+from openai import OpenAI
 from gtts import gTTS
 import base64
 import io
@@ -7,14 +7,13 @@ import speech_recognition as sr
 from pydub import AudioSegment
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
 import numpy as np
-import re
 
-# === SET YOUR OPENAI API KEY HERE ===
-openai.api_key = st.secrets.get("OPENAI_API_KEY") or "your-openai-api-key"
+# === OpenAI client setup ===
+client = OpenAI(api_key="your-openai-api-key")  # Replace with your actual API key
 
-# Page config
-st.set_page_config(page_title="GPT Voice/Text Chatbot", page_icon="🤖", layout="wide")
-st.title("🤖 GPT Voice/Text Chatbot")
+# --- Streamlit Config ---
+st.set_page_config(page_title="Voice/Text Chatbot", page_icon="🤖🎤", layout="wide")
+st.title("🤖 Voice/Text Chatbot with AI Voice Assistant")
 
 # --- Sidebar: Chat History ---
 st.sidebar.header("Chat History")
@@ -55,23 +54,9 @@ tts_lang = voice_styles[voice_style]
 
 # --- Helper Functions ---
 
-def split_text(text, max_length=100):
-    sentences = re.split(r'(?<=[.!?]) +', text)
-    chunks = []
-    current_chunk = ""
-    for sentence in sentences:
-        if len(current_chunk) + len(sentence) < max_length:
-            current_chunk += sentence + " "
-        else:
-            chunks.append(current_chunk.strip())
-            current_chunk = sentence + " "
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-    return chunks
-
 def generate_tts_base64(text, lang):
     try:
-        tts = gTTS(text=text, lang=lang, slow=False)
+        tts = gTTS(text=text, lang=lang)
         mp3_fp = io.BytesIO()
         tts.write_to_fp(mp3_fp)
         mp3_fp.seek(0)
@@ -82,15 +67,13 @@ def generate_tts_base64(text, lang):
 
 def ask_gpt(messages):
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
         return f"Error from GPT: {e}"
-
-# --- Audio Recognition ---
 
 class AudioProcessor(AudioProcessorBase):
     def __init__(self):
@@ -128,7 +111,7 @@ def recognize_audio(frames):
 user_input = None
 
 if input_mode == "Text Input":
-    user_input = st.text_input("💬 Type your message here:")
+    user_input = st.text_input("Type your message and press Enter:")
 else:
     st.info("🎙 Speak into your mic and click '🎧 Process Voice Input'")
     ctx = webrtc_streamer(
@@ -157,22 +140,20 @@ else:
 # --- Process Chat ---
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
-    with st.spinner("🤖 GPT is thinking..."):
+    with st.spinner("🤖 Assistant is responding..."):
         bot_response = ask_gpt(st.session_state.chat_history)
     st.session_state.chat_history.append({"role": "assistant", "content": bot_response})
 
     st.markdown(f"**🧑 You:** {user_input}")
     st.markdown(f"**🤖 Assistant:** {bot_response}")
 
-    chunks = split_text(bot_response, max_length=100)
-    for chunk in chunks:
-        audio_base64 = generate_tts_base64(chunk, tts_lang)
-        if audio_base64:
-            st.markdown(
-                f"""
-                <audio autoplay style="display:none">
-                    <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                </audio>
-                """,
-                unsafe_allow_html=True,
-            )
+    audio_base64 = generate_tts_base64(bot_response, tts_lang)
+    if audio_base64:
+        st.markdown(
+            f"""
+            <audio autoplay style="display:none">
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+            """,
+            unsafe_allow_html=True,
+        )
