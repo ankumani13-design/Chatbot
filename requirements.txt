@@ -3,3 +3,5 @@ openai
 gTTS
 SpeechRecognition
 pydub
+streamlit-webrtc
+numpy
