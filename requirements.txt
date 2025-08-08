@@ -1,6 +1,7 @@
-streamlit_audio_recorder
+streamlit
+openai
+gtts
 pydub
 SpeechRecognition
-gtts
-openai
+streamlit_audio_recorder
 wikipedia
