@@ -3,7 +3,6 @@ import wikipedia
 from gtts import gTTS
 import base64
 import io
-import speech_recognition as sr
 
 # --- Page Setup ---
 st.set_page_config(page_title="Jarvis Chatbot", page_icon="🤖", layout="wide")
@@ -58,28 +57,8 @@ def process_message(user_input, feature):
     else:
         return f"I heard you say: {user_input}"
 
-# --- Input Section (Text + Mic Icon) ---
-col1, col2 = st.columns([8,1])
-
-with col1:
-    user_input = st.text_input("💬 Type your message here:", key="text_input")
-
-with col2:
-    if st.button("🎤"):
-        recognizer = sr.Recognizer()
-        mic = sr.Microphone()
-
-        with mic as source:
-            st.info("Listening...")
-            recognizer.adjust_for_ambient_noise(source)
-            audio = recognizer.listen(source)
-
-        try:
-            user_input = recognizer.recognize_google(audio)
-            st.success(f"🧑 You said: {user_input}")
-        except:
-            st.error("Sorry, I couldn't recognize your voice.")
-            user_input = None
+# --- Input Section ---
+user_input = st.text_input("💬 Type your message here:")
 
 # --- Process Input ---
 if user_input:
