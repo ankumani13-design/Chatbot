@@ -1,14 +1,13 @@
 import streamlit as st
 import wikipedia
-import speech_recognition as sr
 from gtts import gTTS
 import base64
 import io
+import speech_recognition as sr
 
 # --- Page Setup ---
-st.set_page_config(page_title="Jarvis Voice Assistant", page_icon="🎤", layout="wide")
-
-st.title("🎤 Jarvis Voice Assistant")
+st.set_page_config(page_title="Jarvis Chatbot", page_icon="🤖", layout="wide")
+st.title("🤖 Jarvis Chatbot")
 
 # Sidebar
 st.sidebar.header("⚙️ Settings")
@@ -59,42 +58,49 @@ def process_message(user_input, feature):
     else:
         return f"I heard you say: {user_input}"
 
-# --- Voice Input ---
-if st.button("🎤 Speak Now"):
-    recognizer = sr.Recognizer()
-    mic = sr.Microphone()
+# --- Input Section (Text + Mic Icon) ---
+col1, col2 = st.columns([8,1])
 
-    with mic as source:
-        st.info("Listening...")
-        recognizer.adjust_for_ambient_noise(source)
-        audio = recognizer.listen(source)
+with col1:
+    user_input = st.text_input("💬 Type your message here:", key="text_input")
 
-    try:
-        user_input = recognizer.recognize_google(audio)
-        st.success(f"🧑 You said: {user_input}")
+with col2:
+    if st.button("🎤"):
+        recognizer = sr.Recognizer()
+        mic = sr.Microphone()
 
-        st.session_state.chat_history.append({"role": "user", "content": user_input})
+        with mic as source:
+            st.info("Listening...")
+            recognizer.adjust_for_ambient_noise(source)
+            audio = recognizer.listen(source)
 
-        # Process Jarvis reply
-        bot_reply = process_message(user_input, features)
-        st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
+        try:
+            user_input = recognizer.recognize_google(audio)
+            st.success(f"🧑 You said: {user_input}")
+        except:
+            st.error("Sorry, I couldn't recognize your voice.")
+            user_input = None
 
-        # Voice reply
-        audio_base64 = speak_text(bot_reply, voice_lang)
-        if audio_base64:
-            st.markdown(
-                f"""
-                <audio autoplay>
-                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                </audio>
-                """,
-                unsafe_allow_html=True,
-            )
+# --- Process Input ---
+if user_input:
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-    except Exception as e:
-        st.error("Sorry, I could not understand your voice. Try again!")
+    bot_reply = process_message(user_input, features)
+    st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
 
-# --- Show Chat ---
+    # Voice reply
+    audio_base64 = speak_text(bot_reply, voice_lang)
+    if audio_base64:
+        st.markdown(
+            f"""
+            <audio autoplay>
+            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+            """,
+            unsafe_allow_html=True,
+        )
+
+# --- Show Chat History ---
 for msg in st.session_state.chat_history:
     if msg["role"] == "user":
         st.markdown(f"<div style='text-align:right; background:#DCF8C6; padding:8px; border-radius:12px;'>🧑 {msg['content']}</div>", unsafe_allow_html=True)
