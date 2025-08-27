@@ -1,122 +1,96 @@
 import streamlit as st
 import wikipedia
 from gtts import gTTS
-import base64
 import io
+import base64
 
-# --- Page Setup ---
-st.set_page_config(page_title="Smart Chatbot", page_icon="🤖", layout="wide")
-st.title("🤖 Smart Chatbot")
+# Page config
+st.set_page_config(page_title="Chatbot", page_icon="❤️")
+st.title("🤖 Chatbot")
 
-# --- Sidebar Settings ---
-st.sidebar.header("⚙️ Settings")
-features = st.sidebar.radio(
-    "Choose Feature:",
-    ["General Chat", "Wikipedia", "Mathematics", "Medical", "Science", "Arts"]
-)
+# Initialize session state
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-lang_options = {
-    "en": "English",
-    "hi": "Hindi",
-    "fr": "French",
-    "de": "German",
-    "es": "Spanish",
-    "ja": "Japanese"
-}
-voice_lang = st.sidebar.selectbox(
-    "Voice Output Language:",
-    list(lang_options.keys()),
-    format_func=lambda k: lang_options[k]
-)
-
-# --- Chat History ---
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-# --- Helper: Generate Voice ---
-def speak_text(text, lang):
+# Function to fetch Wikipedia summary + image + link
+def get_wikipedia_info(query):
     try:
-        tts = gTTS(text=text, lang=lang)
-        mp3_fp = io.BytesIO()
-        tts.write_to_fp(mp3_fp)
-        mp3_fp.seek(0)
-        return base64.b64encode(mp3_fp.read()).decode("utf-8")
+        page = wikipedia.page(query, auto_suggest=False, redirect=True)
+        summary = wikipedia.summary(query, sentences=2, auto_suggest=False, redirect=True)
+        return {
+            "summary": summary,
+            "url": page.url,
+            "images": page.images[:1]  # first image only
+        }
     except Exception:
-        return None
+        return {
+            "summary": "Sorry, I couldn't find details on that topic.",
+            "url": None,
+            "images": []
+        }
 
-# --- Bot Logic ---
-def process_message(user_text, feature):
-    low = user_text.lower().strip()
-    if low in ["hi", "hello", "hey"]:
-        return {"summary": "Hello, how can I help you?", "url": None, "images": []}
+# Function to convert text to speech (autoplay)
+def text_to_speech_auto(text):
+    tts = gTTS(text=text, lang='en')
+    mp3_fp = io.BytesIO()
+    tts.write_to_fp(mp3_fp)
+    mp3_fp.seek(0)
+    audio_bytes = mp3_fp.read()
+    audio_b64 = base64.b64encode(audio_bytes).decode()
+    audio_html = f"""
+        <audio autoplay>
+            <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
+        </audio>
+    """
+    st.markdown(audio_html, unsafe_allow_html=True)
+
+# Function to handle conversation
+def process_message(user_input):
+    low = user_input.lower().strip()
+
+    # Special commands
+    if low == "hi":
+        return {"summary": "Hello! How can I help you?", "url": None, "images": []}
+
+    if low in ["how are you", "how r u", "how are u"]:
+        return {"summary": "I am fine, how can I help you?", "url": None, "images": []}
+
     if low == "open google":
-        return {"summary": None, "url": "https://www.google.com", "images": []}
+        st.markdown(
+            """
+            <script>
+            window.open("https://www.google.com", "_blank").focus();
+            </script>
+            """,
+            unsafe_allow_html=True,
+        )
+        return {"summary": "Opening Google in a new tab...", "url": None, "images": []}
 
-    if feature in ["Wikipedia", "Medical", "Science", "Arts"]:
-        try:
-            summary = wikipedia.summary(user_text, sentences=2)
-            page = wikipedia.page(user_text, auto_suggest=False)
-            return {"summary": summary, "url": page.url, "images": page.images}
-        except Exception:
-            return {"summary": "Sorry, couldn't find anything on Wikipedia.", "url": None, "images": []}
+    # Default → fetch Wikipedia info
+    return get_wikipedia_info(user_input)
 
-    if feature == "Mathematics":
-        try:
-            result = eval(user_text)
-            return {"summary": f"Answer: {result}", "url": None, "images": []}
-        except Exception:
-            return {"summary": "Math error! Please type a valid expression.", "url": None, "images": []}
+# Chat input
+user_input = st.text_input("Type your message:")
 
-    return {"summary": f"I heard you say: {user_text}", "url": None, "images": []}
-
-# --- Input Field ---
-user_input = st.text_input("💬 Type your message here:")
-
-audio_base64 = None
 if user_input:
-    st.session_state.chat_history.append({"role": "user", "content": user_input})
-    response = process_message(user_input, features)
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    bot_reply = process_message(user_input)
+    st.session_state.messages.append({"role": "bot", "content": bot_reply})
 
-    # Handle redirect to Google
-    if response["url"] and response["summary"] is None:
-        st.markdown(f'<meta http-equiv="refresh" content="0;url={response["url"]}">', unsafe_allow_html=True)
-    else:
-        bot_reply = response["summary"]
-        st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
-
-        # Auto-speak
-        audio_base64 = speak_text(bot_reply, voice_lang)
-
-        # Image display
-        if response["images"]:
-            for img in response["images"]:
-                if img.lower().endswith((".jpg", ".png")):
-                    st.image(img, width=300)
-                    break
-
-        # More info link
-        if response["url"]:
-            st.markdown(f"[🔗 More about {user_input}]({response['url']})")
-
-# --- Display Conversation ---
-for msg in st.session_state.chat_history:
+# Display conversation (left-aligned chat style)
+for msg in st.session_state.messages:
     if msg["role"] == "user":
-        st.markdown(f"<div style='text-align:right; background:#DCF8C6; padding:8px; border-radius:12px;'>🧑 {msg['content']}</div>", unsafe_allow_html=True)
+        st.markdown(f"🧑 **You:** {msg['content']}", unsafe_allow_html=True)
     else:
-        st.markdown(f"<div style='text-align:left; background:#F1F0F0; padding:8px; border-radius:12px;'>🤖 {msg['content']}</div>", unsafe_allow_html=True)
+        if msg["content"]["summary"]:
+            st.markdown(f"🤖 **Bot:** {msg['content']['summary']}", unsafe_allow_html=True)
+            text_to_speech_auto(msg["content"]["summary"])  # autoplay voice
 
-# --- Auto Voice Player ---
-if audio_base64:
-    st.markdown(
-        f"""
-        <div style="text-align:center; margin-top:10px;">
-            <audio autoplay>
-                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-            </audio>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        if msg["content"]["images"]:
+            st.image(msg["content"]["images"][0], width=300)
 
-# --- Footer Heart ---
-st.markdown("<div style='text-align:center; font-size:22px;'>❤️</div>", unsafe_allow_html=True)
+        if msg["content"]["url"]:
+            st.markdown(f"[🔗 More info]({msg['content']['url']})")
+
+# Heart at the bottom
+st.markdown("<h3 style='text-align: center;'>❤️</h3>", unsafe_allow_html=True)
