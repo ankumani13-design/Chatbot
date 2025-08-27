@@ -1,97 +1,96 @@
 import streamlit as st
 import wikipedia
-import webbrowser
+import requests
 from gtts import gTTS
+from io import BytesIO
 import base64
+from PIL import Image
+from bs4 import BeautifulSoup
 
-# Page config
-st.set_page_config(page_title="AI Assistant", layout="wide")
+st.set_page_config(page_title="🤖 AI Assistant", page_icon="🤖", layout="centered")
 
-# Chat history
+# Initialize chat history
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Function: Convert text to speech (autoplay)
-def speak(text):
+# Function: Text-to-Speech
+def speak_text(text):
     tts = gTTS(text=text, lang="en")
-    tts.save("voice.mp3")
-    with open("voice.mp3", "rb") as f:
-        audio_bytes = f.read()
-    b64 = base64.b64encode(audio_bytes).decode()
-    md = f"""
+    mp3_fp = BytesIO()
+    tts.write_to_fp(mp3_fp)
+    mp3_fp.seek(0)
+    audio_base64 = base64.b64encode(mp3_fp.read()).decode("utf-8")
+    audio_html = f"""
         <audio autoplay>
-        <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
         </audio>
     """
-    st.markdown(md, unsafe_allow_html=True)
+    return audio_html
 
-# Function: Handle queries
-def get_response(user_input):
-    user_input = user_input.lower().strip()
-
-    # 🟢 Small talk FIRST (before Wikipedia)
-    if user_input in ["hi", "hello", "hey"]:
-        return "Hello, how can I help you?"
-    if "how are you" in user_input:
-        return "I am fine, how can I help you?"
-
-    # 🟢 Math
-    if any(op in user_input for op in ["*", "+", "-", "/"]):
-        try:
-            result = eval(user_input)
-            return f"The answer is {result}"
-        except:
-            return "Sorry, I couldn't solve that."
-
-    # 🟢 Health
-    if "fever" in user_input:
-        return ("Causes: Infection, flu, etc.\n"
-                "Prevention: Rest, hydration, avoid cold foods.\n"
-                "Prescription: Take paracetamol, consult a doctor if high fever continues.")
-
-    # 🟢 Open Google
-    if "open google" in user_input:
-        webbrowser.open("https://www.google.com")
-        return "Opening Google..."
-
-    # 🟢 Wikipedia fallback
+# Function: Get Wikipedia info with image
+def get_wiki_info(query):
     try:
-        summary = wikipedia.summary(user_input, sentences=2)
-        page = wikipedia.page(user_input)
-        img_url = page.images[0] if page.images else None
-        link = page.url
-        if img_url:
-            st.image(img_url, caption=user_input.title(), width=300)
-        st.markdown(f"[Click here for more details]({link})")
-        return summary
+        summary = wikipedia.summary(query, sentences=2)
+        page = wikipedia.page(query)
+        image_url = page.images[0] if page.images else None
+        return summary, image_url, page.url
     except:
-        return "Sorry, I couldn't find information on that."
+        return "Sorry, I couldn't fetch info for that.", None, None
+
+# Function: Special Features
+def handle_features(user_input):
+    user_input_lower = user_input.lower()
+
+    if user_input_lower == "hi":
+        return "Hello, how can I help you today?", None, None
+
+    if user_input_lower == "how are you":
+        return "I am fine, how can I help you?", None, None
+
+    if "open google" in user_input_lower:
+        st.markdown("[Click here to open Google 🌐](https://www.google.com)")
+        return "Opening Google...", None, "https://www.google.com"
+
+    if "*" in user_input_lower or "+" in user_input_lower or "-" in user_input_lower or "/" in user_input_lower:
+        try:
+            result = eval(user_input_lower)
+            return f"The answer is {result}", None, None
+        except:
+            return "I couldn't calculate that.", None, None
+
+    if "fever" in user_input_lower:
+        return ("Fever is usually caused by infections. "
+                "Prevention: stay hydrated, rest, and take paracetamol if needed. "
+                "Consult a doctor if it persists."), None, None
+
+    # Otherwise Wikipedia
+    return get_wiki_info(user_input)
 
 # UI
 st.title("🤖 AI Assistant")
 
-# Show chat history
-for role, msg in st.session_state.history:
-    align = "left" if role == "user" else "right"
-    st.markdown(f"<div style='text-align: {align};'><b>{role.capitalize()}:</b> {msg}</div>", unsafe_allow_html=True)
+for chat in st.session_state.history:
+    st.markdown(f"**You:** {chat['user']}")
+    st.markdown(f"**Bot:** {chat['bot']}")
+    if chat["audio"]:
+        st.markdown(chat["audio"], unsafe_allow_html=True)
+    if chat["image"]:
+        st.image(chat["image"], width=200)
+    if chat["link"]:
+        st.markdown(f"[More Info 🔗]({chat['link']})")
 
-# Input box
 user_input = st.text_input("Type your message here...")
 
-if user_input:
-    # Get response
-    response = get_response(user_input)
+if st.button("Send") and user_input:
+    response, image_url, link = handle_features(user_input)
+    audio_html = speak_text(response)
 
-    # Save to history
-    st.session_state.history.append(("user", user_input))
-    st.session_state.history.append(("bot", response))
-
-    # ✅ use new API
-    st.rerun()
-
-# Voice output for last bot response
-if st.session_state.history and st.session_state.history[-1][0] == "bot":
-    speak(st.session_state.history[-1][1])
-
-# Footer
-st.markdown("<h4 style='text-align: center;'>❤️</h4>", unsafe_allow_html=True)
+    chat_entry = {
+        "user": user_input,
+        "bot": response,
+        "audio": audio_html,
+        "image": image_url,
+        "link": link
+    }
+    st.session_state.history.append(chat_entry)
+    st.experimental_rerun()
