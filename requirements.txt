@@ -1,4 +1,6 @@
 streamlit
 wikipedia
 gTTS
-deep-translator
+requests
+beautifulsoup4
+pillow
