@@ -1,13 +1,11 @@
 import streamlit as st
 import wikipedia
-import requests
 from gtts import gTTS
 from io import BytesIO
 import base64
 from PIL import Image
-from bs4 import BeautifulSoup
 
-st.set_page_config(page_title="🤖 AI Assistant", page_icon="🤖", layout="centered")
+st.set_page_config(page_title="🤖 AI Assistant", page_icon="🤖", layout="wide")
 
 # Initialize chat history
 if "history" not in st.session_state:
@@ -51,34 +49,56 @@ def handle_features(user_input):
         st.markdown("[Click here to open Google 🌐](https://www.google.com)")
         return "Opening Google...", None, "https://www.google.com"
 
-    if "*" in user_input_lower or "+" in user_input_lower or "-" in user_input_lower or "/" in user_input_lower:
+    # Math solver
+    if any(op in user_input_lower for op in ["+", "-", "*", "/", "**"]):
         try:
             result = eval(user_input_lower)
             return f"The answer is {result}", None, None
         except:
             return "I couldn't calculate that.", None, None
 
+    # Doctor help
     if "fever" in user_input_lower:
-        return ("Fever is usually caused by infections. "
-                "Prevention: stay hydrated, rest, and take paracetamol if needed. "
-                "Consult a doctor if it persists."), None, None
+        return ("🤒 Fever Tip: Drink fluids, rest, and take paracetamol if needed. "
+                "See a doctor if it lasts >3 days."), None, None
 
-    # Otherwise Wikipedia
+    if "cold" in user_input_lower:
+        return ("🤧 Cold Tip: Drink warm fluids, use steam inhalation, "
+                "and rest well. Consult a doctor if severe."), None, None
+
+    if "headache" in user_input_lower:
+        return ("🤕 Headache Tip: Rest, stay hydrated, avoid screen time. "
+                "If persistent, check with a doctor."), None, None
+
+    # Default Wikipedia
     return get_wiki_info(user_input)
 
-# UI
+
+# ---------- UI Layout ----------
 st.title("🤖 AI Assistant")
 
-for chat in st.session_state.history:
-    st.markdown(f"**You:** {chat['user']}")
-    st.markdown(f"**Bot:** {chat['bot']}")
-    if chat["audio"]:
-        st.markdown(chat["audio"], unsafe_allow_html=True)
-    if chat["image"]:
-        st.image(chat["image"], width=200)
-    if chat["link"]:
-        st.markdown(f"[More Info 🔗]({chat['link']})")
+# Sidebar (Chat History + Quick Tools)
+with st.sidebar:
+    st.header("📜 Chat History")
+    for i, chat in enumerate(st.session_state.history, 1):
+        st.markdown(f"**{i}. You:** {chat['user']}")
+        st.markdown(f"**Bot:** {chat['bot']}")
 
+    st.divider()
+    st.header("➕ Quick Maths")
+    math_query = st.text_input("Enter expression (e.g., 5*5)", key="math")
+    if st.button("Solve"):
+        try:
+            result = eval(math_query)
+            st.success(f"Answer: {result}")
+        except:
+            st.error("Invalid Expression")
+
+    st.divider()
+    st.header("🏥 Doctor Help")
+    st.info("Try typing: 'fever', 'cold', 'headache' in chat")
+
+# Main chat area
 user_input = st.text_input("Type your message here...")
 
 if st.button("Send") and user_input:
@@ -94,3 +114,15 @@ if st.button("Send") and user_input:
     }
     st.session_state.history.append(chat_entry)
     st.experimental_rerun()
+
+# Display last response
+if st.session_state.history:
+    last = st.session_state.history[-1]
+    st.markdown(f"**You:** {last['user']}")
+    st.markdown(f"**Bot:** {last['bot']}")
+    if last["audio"]:
+        st.markdown(last["audio"], unsafe_allow_html=True)
+    if last["image"]:
+        st.image(last["image"], width=200)
+    if last["link"]:
+        st.markdown(f"[More Info 🔗]({last['link']})")
