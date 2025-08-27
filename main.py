@@ -3,7 +3,6 @@ import wikipedia
 import webbrowser
 from gtts import gTTS
 import base64
-from deep_translator import GoogleTranslator
 
 # Page config
 st.set_page_config(page_title="AI Assistant", layout="wide")
@@ -30,13 +29,13 @@ def speak(text):
 def get_response(user_input):
     user_input = user_input.lower().strip()
 
-    # Small talk
+    # 🟢 Small talk FIRST (before Wikipedia)
     if user_input in ["hi", "hello", "hey"]:
         return "Hello, how can I help you?"
     if "how are you" in user_input:
         return "I am fine, how can I help you?"
 
-    # Math
+    # 🟢 Math
     if any(op in user_input for op in ["*", "+", "-", "/"]):
         try:
             result = eval(user_input)
@@ -44,28 +43,27 @@ def get_response(user_input):
         except:
             return "Sorry, I couldn't solve that."
 
-    # Health
+    # 🟢 Health
     if "fever" in user_input:
         return ("Causes: Infection, flu, etc.\n"
                 "Prevention: Rest, hydration, avoid cold foods.\n"
                 "Prescription: Take paracetamol, consult a doctor if high fever continues.")
 
-    # Open Google
+    # 🟢 Open Google
     if "open google" in user_input:
         webbrowser.open("https://www.google.com")
         return "Opening Google..."
 
-    # Wikipedia search
+    # 🟢 Wikipedia fallback
     try:
         summary = wikipedia.summary(user_input, sentences=2)
         page = wikipedia.page(user_input)
         img_url = page.images[0] if page.images else None
         link = page.url
-        result = summary
         if img_url:
             st.image(img_url, caption=user_input.title(), width=300)
         st.markdown(f"[Click here for more details]({link})")
-        return result
+        return summary
     except:
         return "Sorry, I couldn't find information on that."
 
@@ -88,12 +86,12 @@ if user_input:
     st.session_state.history.append(("user", user_input))
     st.session_state.history.append(("bot", response))
 
-    # Refresh with rerun
+    # ✅ use new API
     st.rerun()
 
 # Voice output for last bot response
 if st.session_state.history and st.session_state.history[-1][0] == "bot":
     speak(st.session_state.history[-1][1])
 
-# Footer with heart
+# Footer
 st.markdown("<h4 style='text-align: center;'>❤️</h4>", unsafe_allow_html=True)
