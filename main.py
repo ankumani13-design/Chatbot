@@ -28,14 +28,16 @@ def speak(text):
 
 # Function: Handle queries
 def get_response(user_input):
-    user_input = user_input.lower()
+    user_input = user_input.lower().strip()
 
     # Small talk
+    if user_input in ["hi", "hello", "hey"]:
+        return "Hello, how can I help you?"
     if "how are you" in user_input:
         return "I am fine, how can I help you?"
 
     # Math
-    if "*" in user_input or "+" in user_input or "-" in user_input or "/" in user_input:
+    if any(op in user_input for op in ["*", "+", "-", "/"]):
         try:
             result = eval(user_input)
             return f"The answer is {result}"
@@ -70,7 +72,7 @@ def get_response(user_input):
 # UI
 st.title("🤖 AI Assistant")
 
-# Show chat history on left
+# Show chat history
 for role, msg in st.session_state.history:
     align = "left" if role == "user" else "right"
     st.markdown(f"<div style='text-align: {align};'><b>{role.capitalize()}:</b> {msg}</div>", unsafe_allow_html=True)
@@ -86,8 +88,8 @@ if user_input:
     st.session_state.history.append(("user", user_input))
     st.session_state.history.append(("bot", response))
 
-    # Show immediately
-    st.experimental_rerun()
+    # Refresh with rerun
+    st.rerun()
 
 # Voice output for last bot response
 if st.session_state.history and st.session_state.history[-1][0] == "bot":
