@@ -5,8 +5,8 @@ import base64
 import io
 
 # --- Page Setup ---
-st.set_page_config(page_title="Jarvis Chatbot", page_icon="🤖", layout="wide")
-st.title("🤖 Jarvis Chatbot")
+st.set_page_config(page_title="Chatbot", page_icon="🤖", layout="wide")
+st.title("🤖 Smart Chatbot")
 
 # Sidebar
 st.sidebar.header("⚙️ Settings")
@@ -40,7 +40,7 @@ def speak_text(text, lang):
 # --- Message Processing ---
 def process_message(user_input, feature):
     if user_input.lower().strip() in ["hi", "hello", "hey"]:
-        return "Hello, my name is Jarvis. How can I help you?"
+        return {"summary": "Hello, how can I help you?", "url": None, "images": []}
 
     if feature in ["Wikipedia", "Medical", "Science", "Arts"]:
         try:
@@ -62,42 +62,28 @@ def process_message(user_input, feature):
 user_input = st.text_input("💬 Type your message here:")
 
 # --- Process Input ---
+audio_base64 = None
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
 
     response = process_message(user_input, features)
 
-    # Handle Wikipedia type
-    if isinstance(response, dict):
-        bot_reply = response["summary"]
-        st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
+    bot_reply = response["summary"]
+    st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
 
-        # Voice reply
-        audio_base64 = speak_text(bot_reply, voice_lang)
-        if audio_base64:
-            st.markdown(
-                f"""
-                <audio autoplay>
-                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                </audio>
-                """,
-                unsafe_allow_html=True,
-            )
+    # Voice reply
+    audio_base64 = speak_text(bot_reply, voice_lang)
 
-        # Show image (first valid image if available)
-        if response["images"]:
-            for img in response["images"]:
-                if img.lower().endswith((".jpg", ".png")):
-                    st.image(img, width=300)
-                    break
+    # Show image (first valid image if available)
+    if response["images"]:
+        for img in response["images"]:
+            if img.lower().endswith((".jpg", ".png")):
+                st.image(img, width=300)
+                break
 
-        # Show link
-        if response["url"]:
-            st.markdown(f"[🔗 More about {user_input}]({response['url']})")
-
-    else:
-        bot_reply = response
-        st.session_state.chat_history.append({"role": "bot", "content": bot_reply})
+    # Show link
+    if response["url"]:
+        st.markdown(f"[🔗 More about {user_input}]({response['url']})")
 
 # --- Show Chat History ---
 for msg in st.session_state.chat_history:
@@ -105,6 +91,19 @@ for msg in st.session_state.chat_history:
         st.markdown(f"<div style='text-align:right; background:#DCF8C6; padding:8px; border-radius:12px;'>🧑 {msg['content']}</div>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div style='text-align:left; background:#F1F0F0; padding:8px; border-radius:12px;'>🤖 {msg['content']}</div>", unsafe_allow_html=True)
+
+# --- Auto Play Voice at Bottom ---
+if audio_base64:
+    st.markdown(
+        f"""
+        <div style="text-align:center; margin-top:20px;">
+            <audio autoplay>
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # Footer Heart
 st.markdown("<div style='text-align:center; font-size:22px;'>❤️</div>", unsafe_allow_html=True)
