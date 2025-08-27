@@ -1,3 +1,5 @@
 streamlit
 wikipedia
+transformers
+torch
 gTTS
