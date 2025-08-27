@@ -1,109 +1,97 @@
 import streamlit as st
 import wikipedia
-import re
+import webbrowser
 from gtts import gTTS
-import os
 import base64
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 
-translator = Translator()
+# Page config
+st.set_page_config(page_title="AI Assistant", layout="wide")
 
-# Function to create audio and autoplay
-def autoplay_audio(text, lang_code="en"):
-    tts = gTTS(text=text, lang=lang_code)
-    tts.save("temp.mp3")
-    with open("temp.mp3", "rb") as f:
+# Chat history
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+# Function: Convert text to speech (autoplay)
+def speak(text):
+    tts = gTTS(text=text, lang="en")
+    tts.save("voice.mp3")
+    with open("voice.mp3", "rb") as f:
         audio_bytes = f.read()
     b64 = base64.b64encode(audio_bytes).decode()
-    return f"""
+    md = f"""
         <audio autoplay>
         <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
         </audio>
     """
+    st.markdown(md, unsafe_allow_html=True)
 
-# Function → fetch wikipedia info
-def get_wikipedia_info(query, lang="en"):
+# Function: Handle queries
+def get_response(user_input):
+    user_input = user_input.lower()
+
+    # Small talk
+    if "how are you" in user_input:
+        return "I am fine, how can I help you?"
+
+    # Math
+    if "*" in user_input or "+" in user_input or "-" in user_input or "/" in user_input:
+        try:
+            result = eval(user_input)
+            return f"The answer is {result}"
+        except:
+            return "Sorry, I couldn't solve that."
+
+    # Health
+    if "fever" in user_input:
+        return ("Causes: Infection, flu, etc.\n"
+                "Prevention: Rest, hydration, avoid cold foods.\n"
+                "Prescription: Take paracetamol, consult a doctor if high fever continues.")
+
+    # Open Google
+    if "open google" in user_input:
+        webbrowser.open("https://www.google.com")
+        return "Opening Google..."
+
+    # Wikipedia search
     try:
-        wikipedia.set_lang(lang)
-        summary = wikipedia.summary(query, sentences=2)
-        page = wikipedia.page(query)
-        images = page.images[:1]
-        return {"summary": summary, "url": page.url, "images": images}
+        summary = wikipedia.summary(user_input, sentences=2)
+        page = wikipedia.page(user_input)
+        img_url = page.images[0] if page.images else None
+        link = page.url
+        result = summary
+        if img_url:
+            st.image(img_url, caption=user_input.title(), width=300)
+        st.markdown(f"[Click here for more details]({link})")
+        return result
     except:
-        return {"summary": f"Sorry, I couldn't find details about {query}.", "url": None, "images": []}
+        return "Sorry, I couldn't find information on that."
 
-# Function → process user input
-def process_message(user_input):
-    # Detect language
-    detected = translator.detect(user_input)
-    lang_code = detected.lang if detected.lang in ["en", "hi", "kn"] else "en"
+# UI
+st.title("🤖 AI Assistant")
 
-    low = user_input.lower().strip()
+# Show chat history on left
+for role, msg in st.session_state.history:
+    align = "left" if role == "user" else "right"
+    st.markdown(f"<div style='text-align: {align};'><b>{role.capitalize()}:</b> {msg}</div>", unsafe_allow_html=True)
 
-    # Greetings
-    if low in ["hi", "hello"]:
-        reply = "Hello! How can I help you?" if lang_code == "en" else \
-                "नमस्ते! मैं आपकी कैसे मदद कर सकता हूँ?" if lang_code == "hi" else \
-                "ಹಲೋ! ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?"
-        return {"summary": reply, "url": None, "images": [], "lang": lang_code}
+# Input box
+user_input = st.text_input("Type your message here...")
 
-    if "how are you" in low or "how r u" in low:
-        reply = "I am fine, how can I help you?" if lang_code == "en" else \
-                "मैं ठीक हूँ, मैं आपकी कैसे मदद कर सकता हूँ?" if lang_code == "hi" else \
-                "ನಾನು ಚೆನ್ನಾಗಿದ್ದೇನೆ, ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?"
-        return {"summary": reply, "url": None, "images": [], "lang": lang_code}
+if user_input:
+    # Get response
+    response = get_response(user_input)
 
-    # Math Solver
-    try:
-        if any(op in low for op in ["+", "-", "*", "/", "^"]):
-            result = eval(low.replace("^", "**"))
-            return {"summary": str(result), "url": None, "images": [], "lang": lang_code}
-    except:
-        pass
+    # Save to history
+    st.session_state.history.append(("user", user_input))
+    st.session_state.history.append(("bot", response))
 
-    # Doctor Mode → Fever Example
-    if "fever" in low or "ಜ್ವರ" in low or "बुखार" in low:
-        reply = {
-            "en": "Fever can be caused by viral or bacterial infections. Drink fluids, take rest, and consult a doctor if it persists.",
-            "hi": "बुखार वायरल या बैक्टीरियल संक्रमण से हो सकता है। तरल पदार्थ पिएं, आराम करें और यदि बना रहे तो डॉक्टर से संपर्क करें।",
-            "kn": "ಜ್ವರ ವೈರಲ್ ಅಥವಾ ಬ್ಯಾಕ್ಟೀರಿಯಾ ಸೋಂಕಿನಿಂದ ಉಂಟಾಗಬಹುದು. ದ್ರವಗಳನ್ನು ಕುಡಿಯಿರಿ, ವಿಶ್ರಾಂತಿ ಪಡೆಯಿರಿ, ಮುಂದುವರೆದರೆ ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ."
-        }
-        return {"summary": reply.get(lang_code, reply["en"]), 
-                "url": "https://www.webmd.com/fever/fever-symptoms-causes", 
-                "images": [], "lang": lang_code}
+    # Show immediately
+    st.experimental_rerun()
 
-    # Default → Wikipedia search
-    info = get_wikipedia_info(user_input, lang_code)
-    info["lang"] = lang_code
-    return info
+# Voice output for last bot response
+if st.session_state.history and st.session_state.history[-1][0] == "bot":
+    speak(st.session_state.history[-1][1])
 
-
-# ------------------------------
-# Streamlit UI
-# ------------------------------
-st.title("🌍 Multilingual AI Assistant")
-st.write("Ask me anything in **English, Hindi, or Kannada**")
-
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-user_input = st.text_input("Type your message:")
-if st.button("Send") and user_input:
-    response = process_message(user_input)
-    st.session_state.history.append(("🧑 You", user_input))
-    st.session_state.history.append(("🤖 Bot", response["summary"]))
-
-    # Show chat
-    for sender, msg in st.session_state.history:
-        st.markdown(f"**{sender}:** {msg}")
-
-    # Show link
-    if response["url"]:
-        st.markdown(f"[More Info]({response['url']})")
-
-    # Show images
-    for img in response["images"]:
-        st.image(img, width=300)
-
-    # Voice reply (autoplay)
-    st.markdown(autoplay_audio(response["summary"], response["lang"]), unsafe_allow_html=True)
+# Footer with heart
+st.markdown("<h4 style='text-align: center;'>❤️</h4>", unsafe_allow_html=True)
