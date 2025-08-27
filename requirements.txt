@@ -1,6 +1,3 @@
 streamlit
-gtts
-pydub
-speechrecognition
-numpy
-streamlit-webrtc
+wikipedia
+gTTS
