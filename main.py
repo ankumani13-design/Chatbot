@@ -1,97 +1,127 @@
 import streamlit as st
-import wikipedia
-from transformers import pipeline, Conversation
 from gtts import gTTS
 import base64
 import io
+import wikipedia
+import sympy as sp
 
-# Load chatbot model
-chatbot = pipeline("conversational", model="microsoft/DialoGPT-medium")
+# --- Page Setup ---
+st.set_page_config(page_title="Chatbot", page_icon="🤖", layout="wide")
 
-st.set_page_config(page_title="Chatbot", page_icon="❤️", layout="wide")
-
-# Custom CSS
+# --- Custom CSS for background + text ---
 st.markdown(
     """
     <style>
-    body {
-        background-color: white;
-        color: black;
-    }
-    .stTextInput > div > div > input {
-        color: black;
-    }
+        body { background-color: white; color: black; }
+        .stMarkdown { color: black; }
     </style>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
 
-st.title("Chatbot")
+st.title("🤖 Chatbot")
 
-# Session state to store chat
-if "history" not in st.session_state:
-    st.session_state.history = []
+# --- Chat History ---
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-# Function: Text to Speech (auto-play)
-def text_to_speech(text):
-    tts = gTTS(text=text, lang="en")
-    mp3_fp = io.BytesIO()
-    tts.write_to_fp(mp3_fp)
-    mp3_fp.seek(0)
-    audio_bytes = mp3_fp.read()
-    b64 = base64.b64encode(audio_bytes).decode()
-    md = f"""
-        <audio autoplay="true">
-        <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-        </audio>
-    """
-    st.markdown(md, unsafe_allow_html=True)
+# Sidebar history
+st.sidebar.header("🕑 Chat History")
+for msg in st.session_state.chat_history:
+    role = "🧑 You" if msg["role"] == "user" else "🤖 Assistant"
+    st.sidebar.markdown(f"**{role}:** {msg['content']}")
 
-# Function: Wikipedia summary
-def get_wikipedia_summary(query):
+# --- Sidebar Settings ---
+st.sidebar.header("⚙️ Settings")
+
+features = st.sidebar.multiselect(
+    "Select Features:",
+    ["Wikipedia", "Medical", "Mathematics", "Science", "Arts"],
+    default=["Wikipedia"]
+)
+
+lang_options = {
+    "en": "English",
+    "hi": "Hindi",
+    "fr": "French",
+    "es": "Spanish",
+    "de": "German",
+    "ja": "Japanese"
+}
+tts_lang = st.sidebar.selectbox(
+    "Voice Output Language:",
+    list(lang_options.keys()),
+    format_func=lambda k: lang_options[k]
+)
+
+# --- TTS Generator ---
+def generate_tts_base64(text, lang):
     try:
-        results = wikipedia.search(query)
-        if results:
-            return wikipedia.summary(results[0], sentences=2)
-    except:
-        return None
-    return None
-
-# Function: Math solver
-def solve_math(query):
-    try:
-        result = eval(query, {"__builtins__": {}})
-        return f"The answer is {result}"
-    except:
+        tts = gTTS(text=text, lang=lang)
+        mp3_fp = io.BytesIO()
+        tts.write_to_fp(mp3_fp)
+        mp3_fp.seek(0)
+        return base64.b64encode(mp3_fp.read()).decode("utf-8")
+    except Exception as e:
+        st.error(f"TTS Error: {e}")
         return None
 
-# User input
-user_input = st.text_input("💬 You:")
+# --- Chat Input ---
+user_input = st.text_input("💬 Type your message here:")
 
+# --- Main Logic ---
 if user_input:
-    # Try Math
-    bot_reply = solve_math(user_input)
+    st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-    # Try Wikipedia
-    if bot_reply is None:
-        bot_reply = get_wikipedia_summary(user_input)
+    response = "I am not sure how to respond."
+    try:
+        if "Mathematics" in features:
+            try:
+                expr = sp.sympify(user_input)
+                result = sp.simplify(expr)
+                response = f"Mathematics result: {result}"
+            except:
+                response = "Could not solve that math expression."
 
-    # Fallback: Conversation model
-    if bot_reply is None:
-        conv = Conversation(user_input)
-        result = chatbot(conv)
-        bot_reply = result.generated_responses[-1]
+        elif "Wikipedia" in features:
+            response = wikipedia.summary(user_input, sentences=2)
 
-    # Save chat history
-    st.session_state.history.append(("You", user_input))
-    st.session_state.history.append(("Bot", bot_reply))
+        elif "Medical" in features:
+            response = "🩺 Medical feature placeholder. (Future expansion)"
 
-    # Speak reply
-    text_to_speech(bot_reply)
+        elif "Science" in features:
+            response = "🔬 Science feature placeholder. (Future expansion)"
 
-# Display conversation
-for role, msg in st.session_state.history:
-    st.markdown(f"**{role}:** {msg}")
+        elif "Arts" in features:
+            response = "🎭 Arts feature placeholder. (Future expansion)"
 
-# Heart at the bottom
-st.markdown("<h3 style='text-align: center;'>❤️</h3>", unsafe_allow_html=True)
+    except Exception as e:
+        response = f"Error: {e}"
+
+    # Display conversation
+    st.markdown(f"**🧑 You:** {user_input}")
+    st.markdown(f"**🤖 Chatbot:** {response}")
+
+    # Save to history
+    st.session_state.chat_history.append({"role": "assistant", "content": response})
+
+    # Voice reply
+    audio_base64 = generate_tts_base64(response, tts_lang)
+    if audio_base64:
+        st.markdown(
+            f"""
+            <audio autoplay style="display:none">
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+            """,
+            unsafe_allow_html=True,
+        )
+
+# --- Show All Chats on Main Page ---
+st.markdown("## 📝 Conversation History")
+for msg in st.session_state.chat_history:
+    role = "🧑 You" if msg["role"] == "user" else "🤖 Chatbot"
+    st.markdown(f"**{role}:** {msg['content']}")
+
+# --- Footer ---
+st.markdown("<center>❤️ Built with Love</center>", unsafe_allow_html=True)
