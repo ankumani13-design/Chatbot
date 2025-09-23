@@ -6,8 +6,9 @@ from sympy import symbols, Eq, solve, simplify
 from sympy.parsing.sympy_parser import parse_expr
 
 # ---------- VOICE FUNCTION ----------
-def speak_text(text, lang="en"):
-    tts = gTTS(text=text, lang=lang, slow=False)
+def speak_text(text):
+    # Use gTTS with normal speed and clear English
+    tts = gTTS(text=text, lang="en", slow=False)
     file_path = "voice.mp3"
     tts.save(file_path)
     with open(file_path, "rb") as f:
@@ -29,8 +30,6 @@ if "last_image" not in st.session_state:
     st.session_state.last_image = None
 if "last_link" not in st.session_state:
     st.session_state.last_link = None
-if "last_bot_response" not in st.session_state:
-    st.session_state.last_bot_response = ""
 if "current_display_history" not in st.session_state:
     st.session_state.current_display_history = []
 
@@ -45,7 +44,6 @@ with st.sidebar:
     if new_feature != st.session_state.feature:
         st.session_state.feature = new_feature
         st.session_state.current_display_history = []
-        st.session_state.last_bot_response = ""
         st.session_state.last_image = None
         st.session_state.last_link = None
 
@@ -60,9 +58,8 @@ page_titles = {
     "Math Solver": "🤖 AI Professor",
     "Assistant": "🤖 AI Assistant"
 }
-current_title = page_titles.get(st.session_state.feature, "🤖 AI Assistant")
-st.set_page_config(page_title=current_title, page_icon="🤖", layout="wide")
-st.title(current_title)
+st.set_page_config(page_title=page_titles.get(st.session_state.feature, "🤖 AI Assistant"), page_icon="🤖", layout="wide")
+st.title(page_titles.get(st.session_state.feature, "🤖 AI Assistant"))
 
 # ---------- DISPLAY CURRENT CHAT ----------
 for sender, msg in st.session_state.current_display_history:
@@ -150,12 +147,7 @@ if user_input:
     # Save bot response and speak
     st.session_state.chat_history.append(("Bot", bot_response))
     st.session_state.current_display_history.append(("Bot", bot_response))
-    st.session_state.last_bot_response = bot_response
     speak_text(bot_response)
-
-# ---------- SHOW BOT RESPONSE BELOW INPUT ----------
-if st.session_state.last_bot_response:
-    st.markdown(f"**🤖 Bot:** {st.session_state.last_bot_response}")
 
 # ---------- DISPLAY ASSISTANT IMAGE/LINK ----------
 if st.session_state.feature == "Assistant":
@@ -173,7 +165,7 @@ st.markdown(
         bottom: 5px;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 20px;  /* smaller heart */
+        font-size: 20px;
         color: red;
         animation: pulse 1s infinite;
     }
