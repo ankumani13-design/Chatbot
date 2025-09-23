@@ -1,6 +1,8 @@
 import streamlit as st
 from gtts import gTTS
 import base64
+import wikipedia
+from io import BytesIO
 
 # ---------- VOICE FUNCTION ----------
 def speak_text(text):
@@ -8,12 +10,9 @@ def speak_text(text):
     file_path = "voice.mp3"
     tts.save(file_path)
 
-    # Read the file and convert to base64
     with open(file_path, "rb") as f:
         audio_bytes = f.read()
     audio_base64 = base64.b64encode(audio_bytes).decode()
-
-    # Inject autoplay audio player
     audio_html = f"""
         <audio autoplay>
             <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
@@ -28,57 +27,79 @@ st.title("🤖 AI Assistant")
 # ---------- SESSION STATE ----------
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "feature" not in st.session_state:
+    st.session_state.feature = "Doctor Help"
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
+    st.header("Select Feature")
+    st.session_state.feature = st.radio(
+        "Features",
+        ("Doctor Help", "Math Solver", "Wikipedia")
+    )
+
+    st.divider()
     st.header("📜 Chat History")
     for sender, msg in st.session_state.chat_history:
         st.markdown(f"**{sender}:** {msg}")
-
-    st.divider()
-    st.header("➕ Quick Maths Solver")
-    math_input = st.text_input("Enter expression (e.g., 2*3)", key="math_input")
-    if st.button("Solve Math"):
-        try:
-            result = eval(math_input)
-            st.success(f"Answer: {result}")
-        except:
-            st.error("Invalid expression")
-
-    st.divider()
-    st.header("🏥 Doctor Help")
-    st.info("Try typing 'fever', 'cold', or 'headache' in chat")
 
 # ---------- CHAT INPUT ----------
 user_input = st.chat_input("Type your message and press Enter...")
 
 if user_input:
-    # Save user message
     st.session_state.chat_history.append(("You", user_input))
-
-    # ---------- BOT RESPONSE ----------
     user_input_lower = user_input.lower()
-    if "hi" in user_input_lower:
-        bot_response = "Hello buddy! How can I help you today?"
-    elif "*" in user_input_lower or "+" in user_input_lower or "-" in user_input_lower or "/" in user_input_lower:
+    bot_response = ""
+
+    # ---------- FEATURE LOGIC ----------
+    if st.session_state.feature == "Doctor Help":
+        if "hi" in user_input_lower or "hello" in user_input_lower:
+            bot_response = "Hello! I am your personal AI doctor. How can I help you?"
+        elif "fever" in user_input_lower:
+            bot_response = (
+                "🤒 Fever\n"
+                "• Cause: Usually due to infections like flu or cold.\n"
+                "• Prevention: Stay hydrated, rest, maintain hygiene.\n"
+                "• Remedy: Take paracetamol and consult a doctor if high fever persists."
+            )
+        elif "cold" in user_input_lower:
+            bot_response = (
+                "🤧 Cold\n"
+                "• Cause: Viral infection of upper respiratory tract.\n"
+                "• Prevention: Avoid cold foods, wash hands regularly, maintain warm environment.\n"
+                "• Remedy: Steam inhalation, warm fluids, rest well."
+            )
+        elif "headache" in user_input_lower:
+            bot_response = (
+                "🤕 Headache\n"
+                "• Cause: Stress, dehydration, eye strain, or migraine.\n"
+                "• Prevention: Stay hydrated, avoid excessive screen time, proper sleep.\n"
+                "• Remedy: Rest, hydration, mild painkillers if necessary."
+            )
+        else:
+            bot_response = "I am here to help you with health-related questions."
+
+    elif st.session_state.feature == "Math Solver":
         try:
             result = eval(user_input_lower)
             bot_response = f"The answer is {result}"
         except:
-            bot_response = "I couldn't calculate that."
-    elif "fever" in user_input_lower:
-        bot_response = "🤒 Fever Tip: Drink fluids, rest, take paracetamol if needed. See a doctor if persistent."
-    elif "cold" in user_input_lower:
-        bot_response = "🤧 Cold Tip: Drink warm fluids, use steam inhalation, rest well. See a doctor if severe."
-    elif "headache" in user_input_lower:
-        bot_response = "🤕 Headache Tip: Rest, stay hydrated, avoid screen time. Consult a doctor if persistent."
-    else:
-        bot_response = f"You said: {user_input}"
+            bot_response = "Invalid math expression. Please enter something like 2*2 or 5+3."
 
-    # Save bot response
+    elif st.session_state.feature == "Wikipedia":
+        try:
+            summary = wikipedia.summary(user_input, sentences=2)
+            page = wikipedia.page(user_input)
+            bot_response = summary
+            st.session_state.last_image = page.images[0] if page.images else None
+            st.session_state.last_link = page.url
+        except:
+            bot_response = "Sorry, I couldn't find information on that topic."
+            st.session_state.last_image = None
+            st.session_state.last_link = None
+
+    # ---------- SAVE AND SPEAK ----------
     st.session_state.chat_history.append(("Bot", bot_response))
-
-    # Speak out the bot response (autoplay)
     speak_text(bot_response)
 
 # ---------- DISPLAY CHAT HISTORY ----------
@@ -87,3 +108,13 @@ for sender, msg in st.session_state.chat_history:
         st.markdown(f"**🧑 You:** {msg}")
     else:
         st.markdown(f"**🤖 Bot:** {msg}")
+
+# ---------- DISPLAY WIKI IMAGE/LINK ----------
+if st.session_state.feature == "Wikipedia":
+    if "last_image" in st.session_state and st.session_state.last_image:
+        st.image(st.session_state.last_image, width=200)
+    if "last_link" in st.session_state and st.session_state.last_link:
+        st.markdown(f"[More Info 🔗]({st.session_state.last_link})")
+
+# ---------- HEART ICON AT BOTTOM ----------
+st.markdown("<h2 style='text-align:center;'>❤️</h2>", unsafe_allow_html=True)
