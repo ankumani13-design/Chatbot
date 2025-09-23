@@ -2,7 +2,6 @@ import streamlit as st
 from gtts import gTTS
 import base64
 import wikipedia
-from io import BytesIO
 from sympy import symbols, Eq, solve, simplify
 from sympy.parsing.sympy_parser import parse_expr
 
@@ -47,8 +46,15 @@ with st.sidebar:
     for sender, msg in st.session_state.chat_history:
         st.markdown(f"**{sender}:** {msg}")
 
+# ---------- DISPLAY CHAT HISTORY ----------
+for sender, msg in st.session_state.chat_history:
+    if sender == "You":
+        st.markdown(f"**🧑 You:** {msg}")
+    else:
+        st.markdown(f"**🤖 Bot:** {msg}")
+
 # ---------- CHAT INPUT ----------
-user_input = st.chat_input("Type your message and press Enter...")
+user_input = st.text_input("Type your message here...")
 
 if user_input:
     # Save user message
@@ -71,15 +77,15 @@ if user_input:
             bot_response = (
                 "🤧 Cold\n"
                 "• Cause: Viral infection of upper respiratory tract.\n"
-                "• Prevention: Avoid cold foods, wash hands regularly, maintain warm environment.\n"
+                "• Prevention: Wash hands, maintain warm environment.\n"
                 "• Remedy: Steam inhalation, warm fluids, rest well."
             )
         elif "headache" in user_input_lower:
             bot_response = (
                 "🤕 Headache\n"
-                "• Cause: Stress, dehydration, eye strain, or migraine.\n"
-                "• Prevention: Stay hydrated, avoid excessive screen time, proper sleep.\n"
-                "• Remedy: Rest, hydration, mild painkillers if necessary."
+                "• Cause: Stress, dehydration, eye strain, migraine.\n"
+                "• Prevention: Hydrate, sleep well, avoid excessive screens.\n"
+                "• Remedy: Rest, hydration, mild painkillers if needed."
             )
         else:
             bot_response = "I am here to help you with health-related questions."
@@ -101,7 +107,7 @@ if user_input:
                         sol = solve(eq, x)
                         bot_response = f"✅ Solution: {sol}"
                     else:
-                        bot_response = "Invalid math expression. Use proper notation."
+                        bot_response = "Invalid math expression."
                 except:
                     bot_response = "I couldn't parse the math problem."
 
@@ -122,16 +128,10 @@ if user_input:
                 st.session_state.last_image = None
                 st.session_state.last_link = None
 
-    # ---------- SAVE BOT RESPONSE ----------
+    # Save bot response and autoplay voice
     st.session_state.chat_history.append(("Bot", bot_response))
-    speak_text(bot_response)  # Autoplay voice for every bot message
-
-# ---------- DISPLAY CHAT HISTORY ----------
-for sender, msg in st.session_state.chat_history:
-    if sender == "You":
-        st.markdown(f"**🧑 You:** {msg}")
-    else:
-        st.markdown(f"**🤖 Bot:** {msg}")
+    speak_text(bot_response)
+    st.experimental_rerun()  # Force Streamlit to refresh and display new response
 
 # ---------- DISPLAY WIKI IMAGE/LINK ----------
 if st.session_state.feature == "Wikipedia":
