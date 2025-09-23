@@ -6,8 +6,8 @@ from sympy import symbols, Eq, solve, simplify
 from sympy.parsing.sympy_parser import parse_expr
 
 # ---------- VOICE FUNCTION ----------
-def speak_text(text):
-    tts = gTTS(text=text, lang="en")
+def speak_text(text, lang="en"):
+    tts = gTTS(text=text, lang=lang, slow=False)
     file_path = "voice.mp3"
     tts.save(file_path)
     with open(file_path, "rb") as f:
@@ -20,10 +20,6 @@ def speak_text(text):
     """
     st.markdown(audio_html, unsafe_allow_html=True)
 
-# ---------- APP CONFIG ----------
-st.set_page_config(page_title="AI Assistant", page_icon="🤖", layout="wide")
-st.title("🤖 AI Assistant")
-
 # ---------- SESSION STATE ----------
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -33,6 +29,18 @@ if "last_image" not in st.session_state:
     st.session_state.last_image = None
 if "last_link" not in st.session_state:
     st.session_state.last_link = None
+if "last_bot_response" not in st.session_state:
+    st.session_state.last_bot_response = ""
+
+# ---------- DYNAMIC PAGE TITLE ----------
+page_titles = {
+    "Doctor Help": "🤖 AI Doctor",
+    "Math Solver": "🤖 AI Professor",
+    "Wikipedia": "🤖 AI Assistant"
+}
+current_title = page_titles.get(st.session_state.feature, "🤖 AI Assistant")
+st.set_page_config(page_title=current_title, page_icon="🤖", layout="wide")
+st.title(current_title)
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
@@ -55,6 +63,8 @@ for sender, msg in st.session_state.chat_history:
 
 # ---------- CHAT INPUT ----------
 user_input = st.text_input("Type your message here...")
+
+bot_response_displayed = ""
 
 if user_input:
     # Save user message
@@ -128,9 +138,14 @@ if user_input:
                 st.session_state.last_image = None
                 st.session_state.last_link = None
 
-    # Save bot response and autoplay voice
+    # Save bot response and speak
     st.session_state.chat_history.append(("Bot", bot_response))
+    st.session_state.last_bot_response = bot_response
     speak_text(bot_response)
+
+# ---------- SHOW BOT RESPONSE BELOW INPUT ----------
+if st.session_state.last_bot_response:
+    st.markdown(f"**🤖 Bot:** {st.session_state.last_bot_response}")
 
 # ---------- DISPLAY WIKI IMAGE/LINK ----------
 if st.session_state.feature == "Wikipedia":
@@ -139,20 +154,19 @@ if st.session_state.feature == "Wikipedia":
     if st.session_state.last_link:
         st.markdown(f"[More Info 🔗]({st.session_state.last_link})")
 
-# ---------- LIT HEART AT BOTTOM ----------
+# ---------- SMALL LIT HEART AT BOTTOM ----------
 st.markdown(
     """
     <style>
     .lit-heart {
         position: fixed;
-        bottom: 10px;
+        bottom: 5px;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 40px;
+        font-size: 25px;  /* smaller heart */
         color: red;
         animation: pulse 1s infinite;
     }
-
     @keyframes pulse {
         0% { transform: translateX(-50%) scale(1); }
         50% { transform: translateX(-50%) scale(1.2); }
