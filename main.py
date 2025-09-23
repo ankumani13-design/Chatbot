@@ -1,13 +1,17 @@
 import streamlit as st
-import pyttsx3
+from gtts import gTTS
+import os
+import base64
 
 # ---------- VOICE FUNCTION ----------
 def speak_text(text):
-    engine = pyttsx3.init()
-    engine.setProperty("rate", 170)  # speed of speech
-    engine.setProperty("volume", 1)  # volume 0-1
-    engine.say(text)
-    engine.runAndWait()
+    tts = gTTS(text=text, lang="en")
+    file_path = "voice.mp3"
+    tts.save(file_path)
+    # Play in Streamlit
+    audio_file = open(file_path, "rb")
+    audio_bytes = audio_file.read()
+    st.audio(audio_bytes, format="audio/mp3")
 
 # ---------- APP CONFIG ----------
 st.set_page_config(page_title="AI Assistant", page_icon="🤖", layout="centered")
