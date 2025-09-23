@@ -131,7 +131,6 @@ if user_input:
     # Save bot response and autoplay voice
     st.session_state.chat_history.append(("Bot", bot_response))
     speak_text(bot_response)
-    st.experimental_rerun()  # Force Streamlit to refresh and display new response
 
 # ---------- DISPLAY WIKI IMAGE/LINK ----------
 if st.session_state.feature == "Wikipedia":
