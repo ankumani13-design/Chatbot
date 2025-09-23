@@ -22,12 +22,32 @@ def speak_text(text):
     st.markdown(audio_html, unsafe_allow_html=True)
 
 # ---------- APP CONFIG ----------
-st.set_page_config(page_title="AI Assistant", page_icon="🤖", layout="centered")
+st.set_page_config(page_title="AI Assistant", page_icon="🤖", layout="wide")
 st.title("🤖 AI Assistant")
 
 # ---------- SESSION STATE ----------
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+
+# ---------- SIDEBAR ----------
+with st.sidebar:
+    st.header("📜 Chat History")
+    for sender, msg in st.session_state.chat_history:
+        st.markdown(f"**{sender}:** {msg}")
+
+    st.divider()
+    st.header("➕ Quick Maths Solver")
+    math_input = st.text_input("Enter expression (e.g., 2*3)", key="math_input")
+    if st.button("Solve Math"):
+        try:
+            result = eval(math_input)
+            st.success(f"Answer: {result}")
+        except:
+            st.error("Invalid expression")
+
+    st.divider()
+    st.header("🏥 Doctor Help")
+    st.info("Try typing 'fever', 'cold', or 'headache' in chat")
 
 # ---------- CHAT INPUT ----------
 user_input = st.chat_input("Type your message and press Enter...")
@@ -37,8 +57,21 @@ if user_input:
     st.session_state.chat_history.append(("You", user_input))
 
     # ---------- BOT RESPONSE ----------
-    if "hi" in user_input.lower():
+    user_input_lower = user_input.lower()
+    if "hi" in user_input_lower:
         bot_response = "Hello buddy! How can I help you today?"
+    elif "*" in user_input_lower or "+" in user_input_lower or "-" in user_input_lower or "/" in user_input_lower:
+        try:
+            result = eval(user_input_lower)
+            bot_response = f"The answer is {result}"
+        except:
+            bot_response = "I couldn't calculate that."
+    elif "fever" in user_input_lower:
+        bot_response = "🤒 Fever Tip: Drink fluids, rest, take paracetamol if needed. See a doctor if persistent."
+    elif "cold" in user_input_lower:
+        bot_response = "🤧 Cold Tip: Drink warm fluids, use steam inhalation, rest well. See a doctor if severe."
+    elif "headache" in user_input_lower:
+        bot_response = "🤕 Headache Tip: Rest, stay hydrated, avoid screen time. Consult a doctor if persistent."
     else:
         bot_response = f"You said: {user_input}"
 
