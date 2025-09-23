@@ -3,7 +3,7 @@ from gtts import gTTS
 import base64
 import wikipedia
 from io import BytesIO
-from sympy import symbols, Eq, solve, simplify, diff, integrate
+from sympy import symbols, Eq, solve, simplify
 from sympy.parsing.sympy_parser import parse_expr
 
 # ---------- VOICE FUNCTION ----------
@@ -42,7 +42,6 @@ with st.sidebar:
         "Features",
         ("Doctor Help", "Math Solver", "Wikipedia")
     )
-
     st.divider()
     st.header("📜 Chat History")
     for sender, msg in st.session_state.chat_history:
@@ -52,6 +51,7 @@ with st.sidebar:
 user_input = st.chat_input("Type your message and press Enter...")
 
 if user_input:
+    # Save user message
     st.session_state.chat_history.append(("You", user_input))
     user_input_lower = user_input.lower()
     bot_response = ""
@@ -89,13 +89,11 @@ if user_input:
             bot_response = "Hi! I am your AI professor. How can I help you today?"
         else:
             try:
-                # Support step-by-step solving
                 expr = parse_expr(user_input_lower)
                 simplified = simplify(expr)
                 bot_response = f"✅ Simplified Result: {simplified}"
             except:
                 try:
-                    # If user writes equation: x**2 -4 =0
                     if "=" in user_input:
                         lhs, rhs = user_input.split("=")
                         x = symbols('x')
@@ -124,9 +122,9 @@ if user_input:
                 st.session_state.last_image = None
                 st.session_state.last_link = None
 
-    # ---------- SAVE AND SPEAK ----------
+    # ---------- SAVE BOT RESPONSE ----------
     st.session_state.chat_history.append(("Bot", bot_response))
-    speak_text(bot_response)
+    speak_text(bot_response)  # Autoplay voice for every bot message
 
 # ---------- DISPLAY CHAT HISTORY ----------
 for sender, msg in st.session_state.chat_history:
