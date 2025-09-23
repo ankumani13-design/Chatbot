@@ -1,128 +1,47 @@
 import streamlit as st
-import wikipedia
-from gtts import gTTS
-from io import BytesIO
-import base64
-from PIL import Image
+import pyttsx3
 
-st.set_page_config(page_title="🤖 AI Assistant", page_icon="🤖", layout="wide")
-
-# Initialize chat history
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-# Function: Text-to-Speech
+# ---------- VOICE FUNCTION ----------
 def speak_text(text):
-    tts = gTTS(text=text, lang="en")
-    mp3_fp = BytesIO()
-    tts.write_to_fp(mp3_fp)
-    mp3_fp.seek(0)
-    audio_base64 = base64.b64encode(mp3_fp.read()).decode("utf-8")
-    audio_html = f"""
-        <audio autoplay>
-            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-        </audio>
-    """
-    return audio_html
+    engine = pyttsx3.init()
+    engine.setProperty("rate", 170)  # speed of speech
+    engine.setProperty("volume", 1)  # volume 0-1
+    engine.say(text)
+    engine.runAndWait()
 
-# Function: Get Wikipedia info with image
-def get_wiki_info(query):
-    try:
-        summary = wikipedia.summary(query, sentences=2)
-        page = wikipedia.page(query)
-        image_url = page.images[0] if page.images else None
-        return summary, image_url, page.url
-    except:
-        return "Sorry, I couldn't fetch info for that.", None, None
-
-# Function: Special Features
-def handle_features(user_input):
-    user_input_lower = user_input.lower()
-
-    if user_input_lower == "hi":
-        return "Hello, how can I help you today?", None, None
-
-    if user_input_lower == "how are you":
-        return "I am fine, how can I help you?", None, None
-
-    if "open google" in user_input_lower:
-        st.markdown("[Click here to open Google 🌐](https://www.google.com)")
-        return "Opening Google...", None, "https://www.google.com"
-
-    # Math solver
-    if any(op in user_input_lower for op in ["+", "-", "*", "/", "**"]):
-        try:
-            result = eval(user_input_lower)
-            return f"The answer is {result}", None, None
-        except:
-            return "I couldn't calculate that.", None, None
-
-    # Doctor help
-    if "fever" in user_input_lower:
-        return ("🤒 Fever Tip: Drink fluids, rest, and take paracetamol if needed. "
-                "See a doctor if it lasts >3 days."), None, None
-
-    if "cold" in user_input_lower:
-        return ("🤧 Cold Tip: Drink warm fluids, use steam inhalation, "
-                "and rest well. Consult a doctor if severe."), None, None
-
-    if "headache" in user_input_lower:
-        return ("🤕 Headache Tip: Rest, stay hydrated, avoid screen time. "
-                "If persistent, check with a doctor."), None, None
-
-    # Default Wikipedia
-    return get_wiki_info(user_input)
-
-
-# ---------- UI Layout ----------
+# ---------- APP CONFIG ----------
+st.set_page_config(page_title="AI Assistant", page_icon="🤖", layout="centered")
 st.title("🤖 AI Assistant")
 
-# Sidebar (Chat History + Quick Tools)
-with st.sidebar:
-    st.header("📜 Chat History")
-    for i, chat in enumerate(st.session_state.history, 1):
-        st.markdown(f"**{i}. You:** {chat['user']}")
-        st.markdown(f"**Bot:** {chat['bot']}")
+# ---------- SESSION STATE ----------
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-    st.divider()
-    st.header("➕ Quick Maths")
-    math_query = st.text_input("Enter expression (e.g., 5*5)", key="math")
-    if st.button("Solve"):
-        try:
-            result = eval(math_query)
-            st.success(f"Answer: {result}")
-        except:
-            st.error("Invalid Expression")
+# ---------- CHAT INPUT (Enter key to send) ----------
+user_input = st.chat_input("Type your message and press Enter...")
 
-    st.divider()
-    st.header("🏥 Doctor Help")
-    st.info("Try typing: 'fever', 'cold', 'headache' in chat")
+if user_input:
+    # Save user message
+    st.session_state.chat_history.append(("You", user_input))
 
-# Main chat area
-user_input = st.text_input("Type your message here...")
+    # ---------- BOT RESPONSE (Dummy logic, replace with your model/API) ----------
+    if "hi" in user_input.lower():
+        bot_response = "Hello buddy! How can I help you today?"
+    else:
+        bot_response = f"You said: {user_input}"
 
-if st.button("Send") and user_input:
-    response, image_url, link = handle_features(user_input)
-    audio_html = speak_text(response)
+    # Save bot response
+    st.session_state.chat_history.append(("Bot", bot_response))
 
-    chat_entry = {
-        "user": user_input,
-        "bot": response,
-        "audio": audio_html,
-        "image": image_url,
-        "link": link
-    }
-    st.session_state.history.append(chat_entry)
-    st.experimental_rerun()
+    # Speak out the bot response
+    speak_text(bot_response)
 
-# Display last response
-if st.session_state.history:
-    last = st.session_state.history[-1]
-    st.markdown(f"**You:** {last['user']}")
-    st.markdown(f"**Bot:** {last['bot']}")
-    if last["audio"]:
-        st.markdown(last["audio"], unsafe_allow_html=True)
-    if last["image"]:
-        st.image(last["image"], width=200)
-    if last["link"]:
-        st.markdown(f"[More Info 🔗]({last['link']})")
+    # Refresh chat
+    st.rerun()
+
+# ---------- DISPLAY CHAT HISTORY ----------
+for sender, msg in st.session_state.chat_history:
+    if sender == "You":
+        st.markdown(f"**🧑 You:** {msg}")
+    else:
+        st.markdown(f"**🤖 Bot:** {msg}")
