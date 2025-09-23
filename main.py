@@ -31,31 +31,41 @@ if "last_link" not in st.session_state:
     st.session_state.last_link = None
 if "last_bot_response" not in st.session_state:
     st.session_state.last_bot_response = ""
-
-# ---------- DYNAMIC PAGE TITLE ----------
-page_titles = {
-    "Doctor Help": "🤖 AI Doctor",
-    "Math Solver": "🤖 AI Professor",
-    "Wikipedia": "🤖 AI Assistant"
-}
-current_title = page_titles.get(st.session_state.feature, "🤖 AI Assistant")
-st.set_page_config(page_title=current_title, page_icon="🤖", layout="wide")
-st.title(current_title)
+if "current_display_history" not in st.session_state:
+    st.session_state.current_display_history = []
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
     st.header("Select Feature")
-    st.session_state.feature = st.radio(
+    new_feature = st.radio(
         "Features",
-        ("Doctor Help", "Math Solver", "Wikipedia")
+        ("Doctor Help", "Math Solver", "Assistant")
     )
+    # Clear main display if feature changes
+    if new_feature != st.session_state.feature:
+        st.session_state.feature = new_feature
+        st.session_state.current_display_history = []
+        st.session_state.last_bot_response = ""
+        st.session_state.last_image = None
+        st.session_state.last_link = None
+
     st.divider()
     st.header("📜 Chat History")
     for sender, msg in st.session_state.chat_history:
         st.markdown(f"**{sender}:** {msg}")
 
-# ---------- DISPLAY CHAT HISTORY ----------
-for sender, msg in st.session_state.chat_history:
+# ---------- DYNAMIC PAGE TITLE ----------
+page_titles = {
+    "Doctor Help": "🤖 AI Doctor",
+    "Math Solver": "🤖 AI Professor",
+    "Assistant": "🤖 AI Assistant"
+}
+current_title = page_titles.get(st.session_state.feature, "🤖 AI Assistant")
+st.set_page_config(page_title=current_title, page_icon="🤖", layout="wide")
+st.title(current_title)
+
+# ---------- DISPLAY CURRENT CHAT ----------
+for sender, msg in st.session_state.current_display_history:
     if sender == "You":
         st.markdown(f"**🧑 You:** {msg}")
     else:
@@ -64,11 +74,10 @@ for sender, msg in st.session_state.chat_history:
 # ---------- CHAT INPUT ----------
 user_input = st.text_input("Type your message here...")
 
-bot_response_displayed = ""
-
 if user_input:
     # Save user message
     st.session_state.chat_history.append(("You", user_input))
+    st.session_state.current_display_history.append(("You", user_input))
     user_input_lower = user_input.lower()
     bot_response = ""
 
@@ -121,7 +130,7 @@ if user_input:
                 except:
                     bot_response = "I couldn't parse the math problem."
 
-    elif st.session_state.feature == "Wikipedia":
+    elif st.session_state.feature == "Assistant":
         if "hi" in user_input_lower or "hello" in user_input_lower:
             bot_response = "Hello! Ask me about any topic and I will fetch info from Wikipedia."
             st.session_state.last_image = None
@@ -140,6 +149,7 @@ if user_input:
 
     # Save bot response and speak
     st.session_state.chat_history.append(("Bot", bot_response))
+    st.session_state.current_display_history.append(("Bot", bot_response))
     st.session_state.last_bot_response = bot_response
     speak_text(bot_response)
 
@@ -147,8 +157,8 @@ if user_input:
 if st.session_state.last_bot_response:
     st.markdown(f"**🤖 Bot:** {st.session_state.last_bot_response}")
 
-# ---------- DISPLAY WIKI IMAGE/LINK ----------
-if st.session_state.feature == "Wikipedia":
+# ---------- DISPLAY ASSISTANT IMAGE/LINK ----------
+if st.session_state.feature == "Assistant":
     if st.session_state.last_image:
         st.image(st.session_state.last_image, width=200)
     if st.session_state.last_link:
@@ -163,7 +173,7 @@ st.markdown(
         bottom: 5px;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 25px;  /* smaller heart */
+        font-size: 20px;  /* smaller heart */
         color: red;
         animation: pulse 1s infinite;
     }
