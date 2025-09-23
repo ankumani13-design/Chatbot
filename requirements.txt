@@ -1,7 +1,4 @@
 streamlit
+gtts
 wikipedia
-gTTS
-requests
-beautifulsoup4
-pillow
 sympy
