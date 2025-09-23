@@ -2,7 +2,6 @@ import streamlit as st
 from gtts import gTTS
 import base64
 import wikipedia
-from io import BytesIO
 
 # ---------- VOICE FUNCTION ----------
 def speak_text(text):
@@ -29,6 +28,10 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "feature" not in st.session_state:
     st.session_state.feature = "Doctor Help"
+if "last_image" not in st.session_state:
+    st.session_state.last_image = None
+if "last_link" not in st.session_state:
+    st.session_state.last_link = None
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
@@ -80,23 +83,31 @@ if user_input:
             bot_response = "I am here to help you with health-related questions."
 
     elif st.session_state.feature == "Math Solver":
-        try:
-            result = eval(user_input_lower)
-            bot_response = f"The answer is {result}"
-        except:
-            bot_response = "Invalid math expression. Please enter something like 2*2 or 5+3."
+        if "hi" in user_input_lower or "hello" in user_input_lower:
+            bot_response = "Hi! I am your AI professor. How can I help you today?"
+        else:
+            try:
+                result = eval(user_input_lower)
+                bot_response = f"The answer is {result}"
+            except:
+                bot_response = "Invalid math expression. Please enter something like 2*2 or 5+3."
 
     elif st.session_state.feature == "Wikipedia":
-        try:
-            summary = wikipedia.summary(user_input, sentences=2)
-            page = wikipedia.page(user_input)
-            bot_response = summary
-            st.session_state.last_image = page.images[0] if page.images else None
-            st.session_state.last_link = page.url
-        except:
-            bot_response = "Sorry, I couldn't find information on that topic."
+        if "hi" in user_input_lower or "hello" in user_input_lower:
+            bot_response = "Hello! Ask me about any topic and I will fetch info from Wikipedia."
             st.session_state.last_image = None
             st.session_state.last_link = None
+        else:
+            try:
+                summary = wikipedia.summary(user_input, sentences=2)
+                page = wikipedia.page(user_input)
+                bot_response = summary
+                st.session_state.last_image = page.images[0] if page.images else None
+                st.session_state.last_link = page.url
+            except:
+                bot_response = "Sorry, I couldn't find information on that topic."
+                st.session_state.last_image = None
+                st.session_state.last_link = None
 
     # ---------- SAVE AND SPEAK ----------
     st.session_state.chat_history.append(("Bot", bot_response))
@@ -111,10 +122,32 @@ for sender, msg in st.session_state.chat_history:
 
 # ---------- DISPLAY WIKI IMAGE/LINK ----------
 if st.session_state.feature == "Wikipedia":
-    if "last_image" in st.session_state and st.session_state.last_image:
+    if st.session_state.last_image:
         st.image(st.session_state.last_image, width=200)
-    if "last_link" in st.session_state and st.session_state.last_link:
+    if st.session_state.last_link:
         st.markdown(f"[More Info 🔗]({st.session_state.last_link})")
 
-# ---------- HEART ICON AT BOTTOM ----------
-st.markdown("<h2 style='text-align:center;'>❤️</h2>", unsafe_allow_html=True)
+# ---------- LIT HEART AT BOTTOM ----------
+st.markdown(
+    """
+    <style>
+    .lit-heart {
+        position: fixed;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 40px;
+        color: red;
+        animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: translateX(-50%) scale(1); }
+        50% { transform: translateX(-50%) scale(1.2); }
+        100% { transform: translateX(-50%) scale(1); }
+    }
+    </style>
+    <div class="lit-heart">❤️</div>
+    """,
+    unsafe_allow_html=True
+)
