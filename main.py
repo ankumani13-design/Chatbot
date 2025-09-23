@@ -2,13 +2,15 @@ import streamlit as st
 from gtts import gTTS
 import base64
 import wikipedia
+from io import BytesIO
+from sympy import symbols, Eq, solve, simplify, diff, integrate
+from sympy.parsing.sympy_parser import parse_expr
 
 # ---------- VOICE FUNCTION ----------
 def speak_text(text):
     tts = gTTS(text=text, lang="en")
     file_path = "voice.mp3"
     tts.save(file_path)
-
     with open(file_path, "rb") as f:
         audio_bytes = f.read()
     audio_base64 = base64.b64encode(audio_bytes).decode()
@@ -87,10 +89,23 @@ if user_input:
             bot_response = "Hi! I am your AI professor. How can I help you today?"
         else:
             try:
-                result = eval(user_input_lower)
-                bot_response = f"The answer is {result}"
+                # Support step-by-step solving
+                expr = parse_expr(user_input_lower)
+                simplified = simplify(expr)
+                bot_response = f"✅ Simplified Result: {simplified}"
             except:
-                bot_response = "Invalid math expression. Please enter something like 2*2 or 5+3."
+                try:
+                    # If user writes equation: x**2 -4 =0
+                    if "=" in user_input:
+                        lhs, rhs = user_input.split("=")
+                        x = symbols('x')
+                        eq = Eq(parse_expr(lhs), parse_expr(rhs))
+                        sol = solve(eq, x)
+                        bot_response = f"✅ Solution: {sol}"
+                    else:
+                        bot_response = "Invalid math expression. Use proper notation."
+                except:
+                    bot_response = "I couldn't parse the math problem."
 
     elif st.session_state.feature == "Wikipedia":
         if "hi" in user_input_lower or "hello" in user_input_lower:
