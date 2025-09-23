@@ -4,4 +4,4 @@ gTTS
 requests
 beautifulsoup4
 pillow
-
+sympy
