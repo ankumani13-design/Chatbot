@@ -3,14 +3,23 @@ from gtts import gTTS
 import base64
 import os
 
-# ---------- TEXT TO SPEECH ----------
+# ---------- TEXT TO SPEECH (AUTOPLAY) ----------
 def speak_text(text):
-    tts = gTTS(text=text, lang="en")  # ✅ English-only
+    tts = gTTS(text=text, lang="en")
     file_path = "voice.mp3"
     tts.save(file_path)
+
     with open(file_path, "rb") as f:
         audio_bytes = f.read()
-        st.audio(audio_bytes, format="audio/mp3")
+    audio_base64 = base64.b64encode(audio_bytes).decode()
+
+    # Autoplay without play button
+    audio_html = f"""
+        <audio autoplay>
+            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+        </audio>
+    """
+    st.markdown(audio_html, unsafe_allow_html=True)
 
 # ---------- INITIALIZE SESSION STATE ----------
 if "feature" not in st.session_state:
@@ -50,6 +59,10 @@ if user_input:
     if feature == "Doctor Help":
         if user_input.lower() in ["hi", "hello"]:
             response = "Hello! I am your personal AI doctor. How can I help you today?"
+        elif "fever" in user_input.lower():
+            response = "Fever is usually caused by infections. Prevention: stay hydrated, rest, and take paracetamol if needed."
+        elif "headache" in user_input.lower():
+            response = "Headache can be caused by stress, dehydration, or lack of sleep. Prevention: drink water, rest, and avoid screen strain."
         else:
             response = f"As a doctor, I suggest you: {user_input}. Please take care!"
 
@@ -59,7 +72,6 @@ if user_input:
             response = "Hi! I am your AI professor. How can I help you with mathematics today?"
         else:
             try:
-                # Quantum-style solution simulation
                 result = eval(user_input)
                 response = f"Quantum solution computed: {result}"
             except:
@@ -76,7 +88,7 @@ if user_input:
     st.session_state.chat_history[feature].append(("You", user_input))
     st.session_state.chat_history[feature].append(("Bot", response))
 
-    # Speak out response
+    # 🔊 Autoplay bot response
     speak_text(response)
 
 # ---------- DISPLAY CHAT BELOW INPUT ----------
