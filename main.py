@@ -1,7 +1,6 @@
 import streamlit as st
 from gtts import gTTS
 import os
-import base64
 
 # ---------- VOICE FUNCTION ----------
 def speak_text(text):
@@ -39,9 +38,6 @@ if user_input:
 
     # Speak out the bot response
     speak_text(bot_response)
-
-    # Refresh chat
-    st.rerun()
 
 # ---------- DISPLAY CHAT HISTORY ----------
 for sender, msg in st.session_state.chat_history:
