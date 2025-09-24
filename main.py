@@ -1,7 +1,6 @@
 import streamlit as st
 from gtts import gTTS
 import base64
-import os
 import sympy as sp
 
 # ---------- VOICE FUNCTION ----------
@@ -65,7 +64,6 @@ def quantum_step_by_step(expression):
         steps = []
         expr = sp.sympify(expression)
 
-        # Expand and simplify separately
         expanded = sp.expand(expr)
         simplified = sp.simplify(expr)
 
@@ -82,6 +80,10 @@ def quantum_step_by_step(expression):
 user_input = st.text_input("Type your message...", key="main_input")
 
 if user_input:
+    # ✅ Ensure chat_history exists before using
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
     # Add user message
     st.session_state.chat_history.append(("user", user_input))
 
@@ -92,7 +94,6 @@ if user_input:
         bot_reply = doctor_reply(user_input)
     elif role == "Professor Quantum":
         if "step by step" in user_input.lower():
-            # get last expression from history if available
             last_expr = None
             for sender, msg in reversed(st.session_state.chat_history):
                 if sender == "user" and msg != user_input:
