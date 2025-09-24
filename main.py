@@ -9,12 +9,12 @@ def speak_text(text):
         tts = gTTS(text=text, lang="en")
         file_path = "voice.mp3"
         tts.save(file_path)
-        audio_file = open(file_path, "rb")
-        audio_bytes = audio_file.read()
-        b64 = base64.b64encode(audio_bytes).decode()
+        with open(file_path, "rb") as f:
+            audio_bytes = f.read()
+        audio_b64 = base64.b64encode(audio_bytes).decode()
         audio_html = f"""
             <audio autoplay>
-                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+                <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
             </audio>
         """
         st.markdown(audio_html, unsafe_allow_html=True)
@@ -40,84 +40,101 @@ st.title(f"🤖 {role}")
 
 # ---------- HELPER FUNCTIONS ----------
 def doctor_reply(user_input):
-    if "fever" in user_input.lower():
-        return "Fever may be caused by infections or flu. Prevention includes hydration, rest, and consulting a doctor if persistent."
-    elif "cold" in user_input.lower():
-        return "Cold is usually caused by viral infections. Prevention includes handwashing, avoiding crowded places, and boosting immunity."
+    user_input_lower = user_input.lower()
+    if "hi" in user_input_lower or "hello" in user_input_lower:
+        return "Hello! I am your personal AI Doctor. How can I help you?"
+    elif "fever" in user_input_lower:
+        return (
+            "🤒 Fever\n"
+            "• Cause: Usually infections like flu or cold.\n"
+            "• Prevention: Hydration, rest, maintain hygiene.\n"
+            "• Remedy: Take paracetamol and consult a doctor if high fever persists."
+        )
+    elif "cold" in user_input_lower:
+        return (
+            "🤧 Cold\n"
+            "• Cause: Viral infection of upper respiratory tract.\n"
+            "• Prevention: Wash hands, stay warm.\n"
+            "• Remedy: Steam inhalation, fluids, rest."
+        )
+    elif "headache" in user_input_lower:
+        return (
+            "🤕 Headache\n"
+            "• Cause: Stress, dehydration, eye strain.\n"
+            "• Prevention: Hydrate, sleep well.\n"
+            "• Remedy: Rest, mild painkillers if needed."
+        )
     else:
-        return f"I’m your AI Doctor. You said: {user_input}"
+        return "I am here to help you with health-related questions."
 
 def quantum_reply(user_input):
     try:
         expr = sp.sympify(user_input)
-        result = sp.simplify(expr)
-        return f"The simplified result of {user_input} is: {result}"
-    except:
-        if "2+2" in user_input:
-            return "2 + 2 = 4"
-        elif "step by step" in user_input.lower():
-            return "Please enter an expression and I’ll solve it step by step."
-        return f"I’m Professor Quantum. You said: {user_input}"
-
-def quantum_step_by_step(expression):
-    try:
-        steps = []
-        expr = sp.sympify(expression)
-
-        expanded = sp.expand(expr)
         simplified = sp.simplify(expr)
+        return f"Simplified Result: {simplified}"
+    except:
+        if "=" in user_input:
+            try:
+                lhs, rhs = user_input.split("=")
+                x = sp.symbols('x')
+                eq = sp.Eq(sp.sympify(lhs), sp.sympify(rhs))
+                sol = sp.solve(eq, x)
+                return f"Solution: {sol}"
+            except:
+                return "Cannot solve this equation."
+        return "I couldn't parse this math problem."
 
-        steps.append(f"Original Expression: {expr}")
-        if expanded != expr:
-            steps.append(f"Step 1: Expand → {expanded}")
-        steps.append(f"Step 2: Simplify → {simplified}")
-
-        return "\n".join(steps)
-    except Exception as e:
-        return f"Sorry, I couldn’t process that expression. Error: {e}"
-
-# ---------- INPUT ----------
-user_input = st.text_input("Type your message...", key="main_input")
+# ---------- CHAT INPUT ----------
+user_input = st.text_input("Type your message here...", key="chat_input")
 
 if user_input:
-    # ✅ Ensure chat_history exists before using
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-
     # Add user message
-    st.session_state.chat_history.append(("user", user_input))
+    st.session_state.chat_history.append(("You", user_input))
 
-    # Bot reply logic
+    # Determine bot response
     if role == "Assistant":
-        bot_reply = f"You said: {user_input}"
+        bot_response = f"{user_input}"  # direct response, no "You said"
     elif role == "AI Doctor":
-        bot_reply = doctor_reply(user_input)
+        bot_response = doctor_reply(user_input)
     elif role == "Professor Quantum":
-        if "step by step" in user_input.lower():
-            last_expr = None
-            for sender, msg in reversed(st.session_state.chat_history):
-                if sender == "user" and msg != user_input:
-                    last_expr = msg
-                    break
-            if last_expr:
-                bot_reply = quantum_step_by_step(last_expr)
-            else:
-                bot_reply = "Please provide an expression before asking for step by step."
-        else:
-            bot_reply = quantum_reply(user_input)
+        bot_response = quantum_reply(user_input)
     else:
-        bot_reply = "I’m here to help!"
+        bot_response = user_input
 
-    # Add bot reply
-    st.session_state.chat_history.append(("bot", bot_reply))
+    # Add bot response
+    st.session_state.chat_history.append((role, bot_response))
 
     # Speak automatically
-    speak_text(bot_reply)
+    speak_text(bot_response)
 
 # ---------- DISPLAY CHAT BELOW INPUT ----------
 st.markdown("### Chat History")
 for sender, msg in st.session_state.chat_history:
-    if sender == "user":
+    if sender == "You":
         st.markdown(f"🧑 **You:** {msg}")
     else:
-        st.markdown(f"🤖 **{role}:** {msg}")
+        st.markdown(f"🤖 **{sender}:** {msg}")
+
+# ---------- LIT HEART AT BOTTOM ----------
+st.markdown(
+    """
+    <style>
+    .lit-heart {
+        position: fixed;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 25px;
+        color: red;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: translateX(-50%) scale(1); }
+        50% { transform: translateX(-50%) scale(1.2); }
+        100% { transform: translateX(-50%) scale(1); }
+    }
+    </style>
+    <div class="lit-heart">❤️</div>
+    """,
+    unsafe_allow_html=True
+)
