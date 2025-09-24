@@ -9,12 +9,12 @@ def speak_text(text):
         tts = gTTS(text=text, lang="en")
         file_path = "voice.mp3"
         tts.save(file_path)
-        with open(file_path, "rb") as f:
-            audio_bytes = f.read()
-        audio_b64 = base64.b64encode(audio_bytes).decode()
+        audio_file = open(file_path, "rb")
+        audio_bytes = audio_file.read()
+        b64 = base64.b64encode(audio_bytes).decode()
         audio_html = f"""
             <audio autoplay>
-                <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
+                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
             </audio>
         """
         st.markdown(audio_html, unsafe_allow_html=True)
@@ -138,3 +138,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
