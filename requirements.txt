@@ -1,4 +1,5 @@
-streamlit
-gTTS
-wikipedia
-sympy
+
+streamlit==1.28.0
+sympy==1.12
+gTTS==2.3.2
+wikipedia==1.4.0
