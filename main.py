@@ -69,22 +69,36 @@ def expectation_value(matrix_list, state_list):
 
 # ---------------- DISEASE DATABASE ----------------
 disease_data = {
-    "cold": { "cause": "Viral infection of the upper respiratory tract.",
-              "symptoms": "Sneezing, runny nose, mild fever, sore throat.",
-              "prevention": "Wash hands, avoid cold exposure, stay warm.",
-              "remedy": "Steam inhalation, rest, warm fluids." },
-    "headache": {"cause": "Stress, dehydration, migraine.",
-                 "symptoms": "Pain in head, sensitivity to light, nausea.",
-                 "prevention": "Hydration, sleep well, reduce stress.",
-                 "remedy": "Hydration, rest, mild painkillers."},
-    "fever": {"cause": "Often viral or bacterial infections.",
-              "symptoms": "High body temperature, chills, body ache.",
-              "prevention": "Maintain hygiene, stay hydrated.",
-              "remedy": "Paracetamol, rest, consult doctor if persistent."},
-    # Add more diseases as needed...
+    "cold": { "cause": "Viral infection of the upper respiratory tract.", "symptoms": "Sneezing, runny nose, mild fever, sore throat.", "prevention": "Wash hands, avoid cold exposure, stay warm.", "remedy": "Steam inhalation, rest, warm fluids."},
+    "headache": {"cause": "Stress, dehydration, migraine.", "symptoms": "Pain in head, sensitivity to light, nausea.", "prevention": "Hydration, sleep well, reduce stress.", "remedy": "Hydration, rest, mild painkillers."},
+    "fever": {"cause": "Often viral or bacterial infections.", "symptoms": "High body temperature, chills, body ache.", "prevention": "Maintain hygiene, stay hydrated.", "remedy": "Paracetamol, rest, consult doctor if persistent."},
+    "sore throat": { "cause": "Viral or bacterial infection.", "symptoms": "Painful throat, difficulty swallowing.", "prevention": "Avoid cold drinks, wash hands.", "remedy": "Warm salt water gargle, rest."},
+    "cough": {"cause": "Viral infection or irritation.", "symptoms": "Dry or productive cough.", "prevention": "Avoid cold exposure, stay hydrated.", "remedy": "Honey, warm fluids, cough syrup if needed."},
+    "flu": { "cause": "Influenza virus infection.", "symptoms": "Fever, fatigue, body ache, sore throat.", "prevention": "Flu vaccine, hygiene, avoid sick contacts.", "remedy": "Rest, fluids, paracetamol."},
+    "stomach ache": { "cause": "Indigestion, gas, viral infection.", "symptoms": "Abdominal pain, bloating.", "prevention": "Eat properly, avoid junk food.", "remedy": "Light meals, hydration, antacids if needed."},
+    "diarrhea": {"cause": "Bacterial/viral infection, food poisoning.", "symptoms": "Loose stools, dehydration.", "prevention": "Clean water, hygiene.", "remedy": "Hydration, ORS, consult doctor if severe."},
+    "constipation": {"cause": "Low fiber diet, dehydration.", "symptoms": "Difficulty passing stools, bloating.", "prevention": "High-fiber diet, hydration, exercise.", "remedy": "Fiber intake, hydration, mild laxatives."},
+    "allergies": { "cause": "Immune reaction to allergens.", "symptoms": "Sneezing, itching, rash.", "prevention": "Avoid allergens, antihistamines if needed.", "remedy": "Antihistamines, avoid triggers."},
+    "diabetes": { "cause": "Body cannot produce or properly use insulin.", "symptoms": "Frequent urination, excessive thirst, fatigue.", "prevention": "Healthy diet, exercise, maintain weight.", "remedy": "Medication, insulin, lifestyle changes."},
+    "hypertension": {"cause": "High blood pressure due to lifestyle/genetics.", "symptoms": "Headache, dizziness, nosebleeds (sometimes asymptomatic).", "prevention": "Low salt diet, exercise, avoid alcohol/smoking.", "remedy": "Medication, lifestyle changes, monitor BP."},
+    "asthma": { "cause": "Inflammation of airways, triggers include allergens.", "symptoms": "Shortness of breath, wheezing, coughing.", "prevention": "Avoid triggers, regular checkups.", "remedy": "Inhalers, medications, avoid allergens."},
+    "migraine": { "cause": "Neurological, triggered by stress, hormones, diet.", "symptoms": "Severe headache, nausea, sensitivity to light/sound.", "prevention": "Manage stress, avoid triggers, sleep well.", "remedy": "Painkillers, rest, lifestyle management."},
+    "gastritis": { "cause": "Stomach lining inflammation due to infection or NSAIDs.", "symptoms": "Stomach pain, nausea, indigestion.", "prevention": "Avoid irritants, healthy diet.", "remedy": "Antacids, medications, diet adjustments."},
+    "uti": { "cause": "Bacterial infection in urinary tract.", "symptoms": "Painful urination, frequent urge to urinate.", "prevention": "Hydration, hygiene, urinate after intercourse.", "remedy": "Antibiotics, hydration."},
+    "skin infection": {"cause": "Bacterial or fungal infections.", "symptoms": "Rash, redness, itching.", "prevention": "Hygiene, avoid contaminated surfaces.", "remedy": "Topical or oral medications."},
+    "bronchitis": { "cause": "Viral or bacterial infection of bronchi.", "symptoms": "Cough, mucus, shortness of breath.", "prevention": "Avoid smoking, good hygiene.", "remedy": "Rest, fluids, medications if bacterial."},
+    "anemia": { "cause": "Low hemoglobin, nutritional deficiency or chronic disease.", "symptoms": "Fatigue, weakness, pallor.", "prevention": "Iron-rich diet, supplements if needed.", "remedy": "Iron supplements, diet changes."},
+    "thyroid disorder": { "cause": "Hypo/Hyperthyroidism due to gland dysfunction.", "symptoms": "Fatigue, weight changes, temperature sensitivity.", "prevention": "Regular checkups, iodine-rich diet.", "remedy": "Medication, monitoring hormone levels."},
+    "covid-19": { "cause": "Infection by SARS-CoV-2 virus.", "symptoms": "Fever, cough, shortness of breath, loss of taste/smell.", "prevention": "Vaccination, masks, social distancing.", "remedy": "Consult doctor, isolation, supportive care."},
+    "heart disease": { "cause": "Coronary artery disease, plaque buildup.", "symptoms": "Chest pain, shortness of breath, fatigue.", "prevention": "Healthy diet, exercise, avoid smoking.", "remedy": "Medication, surgery, lifestyle changes."},
+    "stroke": { "cause": "Interruption of blood flow to brain.", "symptoms": "Weakness, speech difficulty, facial droop.", "prevention": "Control BP, healthy lifestyle.", "remedy": "Immediate medical attention, rehabilitation."},
+    "cancer": { "cause": "Uncontrolled cell growth in body tissues.", "symptoms": "Varies by type; lumps, fatigue, weight loss.", "prevention": "Avoid carcinogens, healthy lifestyle, screenings.", "remedy": "Surgery, chemotherapy, radiation therapy."},
+    "ckd": { "cause": "Chronic kidney damage over time.", "symptoms": "Fatigue, swelling, decreased urine output.", "prevention": "Control BP/diabetes, hydration.", "remedy": "Dialysis, transplant, medications."},
+    "liver disease": {"cause": "Hepatitis, alcohol, fatty liver.", "symptoms": "Jaundice, fatigue, nausea.", "prevention": "Avoid alcohol, vaccination, healthy diet.", "remedy": "Medications, lifestyle changes, transplant in severe cases."},
+    "tb": { "cause": "Bacterial infection by Mycobacterium tuberculosis.", "symptoms": "Cough, weight loss, fever, night sweats.", "prevention": "Vaccination (BCG), avoid infected contact.", "remedy": "Long-term antibiotics."},
+    "pneumonia": { "cause": "Lung infection (bacterial/viral).", "symptoms": "Fever, cough, shortness of breath, chest pain.", "prevention": "Vaccination, hygiene, avoid smoking.", "remedy": "Antibiotics, hospitalization if severe."},
+    "hiv": { "cause": "Viral infection attacking the immune system.", "symptoms": "Flu-like symptoms initially; long-term immune suppression.", "prevention": "Safe sex, avoid sharing needles.", "remedy": "Antiretroviral therapy (ART)."}
 }
-
-# ---------------- SESSION STATE ----------------
 for key in ["chat_history","feature","last_image","last_link","last_bot_response","current_display_history","voice_lang"]:
     if key not in st.session_state:
         st.session_state[key] = "" if "bot_response" in key else []
@@ -246,3 +260,4 @@ font-size: 20px;color: red;animation: pulse 1s infinite;}
 </style>
 <div class="lit-heart">❤️</div>
 """, unsafe_allow_html=True)
+
