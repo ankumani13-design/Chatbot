@@ -3,10 +3,6 @@ from gtts import gTTS
 import base64
 import wikipedia
 import sympy as sp
-from openai import OpenAI
-
-# ---------- INIT OPENAI ----------
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # ---------- VOICE FUNCTION ----------
 def speak_text(text, lang="en"):
@@ -43,20 +39,6 @@ def quantum_reply(user_input):
             except:
                 return "Cannot solve this equation."
         return "I couldn't parse this math problem."
-
-# ---------- GPT REPLY FUNCTION ----------
-def gpt_reply(prompt):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # fast + cheaper model
-            messages=[
-                {"role": "system", "content": "You are a helpful AI assistant."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"GPT error: {e}"
 
 # ---------- SESSION STATE ----------
 if "chat_history" not in st.session_state:
@@ -174,21 +156,18 @@ if user_input:
 
     elif st.session_state.feature == "Assistant":
         if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hello! I am your smart AI Assistant. What do you want to know?"
+            bot_response = "Hello! Ask me about any topic and I will fetch info from Wikipedia."
             st.session_state.last_image = None
             st.session_state.last_link = None
         else:
-            # First try GPT
-            bot_response = gpt_reply(user_input)
-
-            # Then attach Wikipedia info if available
             try:
-                summary = wikipedia.summary(user_input, sentences=1)
+                summary = wikipedia.summary(user_input, sentences=2)
                 page = wikipedia.page(user_input)
-                bot_response += f"\n\n📖 Wiki says: {summary}"
+                bot_response = summary
                 st.session_state.last_image = page.images[0] if page.images else None
                 st.session_state.last_link = page.url
             except:
+                bot_response = "Sorry, I couldn't find information on that topic."
                 st.session_state.last_image = None
                 st.session_state.last_link = None
 
