@@ -25,83 +25,50 @@ def speak_text(text, lang="en"):
     except Exception as e:
         st.error(f"Voice error: {e}")
 
-# ---------- QUANTUM & MATH FUNCTIONS ----------
-def solve_equation(eq_str, var_str):
-    var = sp.symbols(var_str)
-    eq = parse_expr(eq_str)
-    solution = sp.solve(eq, var)
-    return f"Solve {eq} for {var} → Solution: {solution}"
+# ---------- DISEASE DATABASE ----------
+disease_data = {
+    # Minor Diseases
+    "cold": {"severity":"Minor","cause":"Viral infection of the upper respiratory tract.","symptoms":"Sneezing, runny nose, mild fever, sore throat.","prevention":"Wash hands, avoid cold exposure, stay warm.","remedy":"Steam inhalation, rest, warm fluids."},
+    "headache": {"severity":"Minor","cause":"Stress, dehydration, migraine.","symptoms":"Pain in head, sensitivity to light, nausea.","prevention":"Hydration, sleep well, reduce stress.","remedy":"Hydration, rest, mild painkillers."},
+    "fever": {"severity":"Minor","cause":"Often viral or bacterial infections.","symptoms":"High body temperature, chills, body ache.","prevention":"Maintain hygiene, stay hydrated.","remedy":"Paracetamol, rest, consult doctor if persistent."},
+    "sore throat": {"severity":"Minor","cause":"Viral or bacterial infection.","symptoms":"Painful throat, difficulty swallowing.","prevention":"Avoid cold drinks, wash hands.","remedy":"Warm salt water gargle, rest."},
+    "cough": {"severity":"Minor","cause":"Viral infection or irritation.","symptoms":"Dry or productive cough.","prevention":"Avoid cold exposure, stay hydrated.","remedy":"Honey, warm fluids, cough syrup if needed."},
+    "flu": {"severity":"Minor","cause":"Influenza virus infection.","symptoms":"Fever, fatigue, body ache, sore throat.","prevention":"Flu vaccine, hygiene, avoid sick contacts.","remedy":"Rest, fluids, paracetamol."},
+    "stomach ache": {"severity":"Minor","cause":"Indigestion, gas, viral infection.","symptoms":"Abdominal pain, bloating.","prevention":"Eat properly, avoid junk food.","remedy":"Light meals, hydration, antacids if needed."},
+    "diarrhea": {"severity":"Minor","cause":"Bacterial/viral infection, food poisoning.","symptoms":"Loose stools, dehydration.","prevention":"Clean water, hygiene.","remedy":"Hydration, ORS, consult doctor if severe."},
+    "constipation": {"severity":"Minor","cause":"Low fiber diet, dehydration.","symptoms":"Difficulty passing stools, bloating.","prevention":"High-fiber diet, hydration, exercise.","remedy":"Fiber intake, hydration, mild laxatives."},
+    "allergies": {"severity":"Minor","cause":"Immune reaction to allergens.","symptoms":"Sneezing, itching, rash.","prevention":"Avoid allergens, antihistamines if needed.","remedy":"Antihistamines, avoid triggers."},
 
-def differentiate(expr_str, var_str):
-    var = sp.symbols(var_str)
-    expr = parse_expr(expr_str)
-    derivative = sp.diff(expr, var)
-    return f"Differentiating {expr} w.r.t {var} → Result: {derivative}"
+    # Moderate Diseases
+    "diabetes": {"severity":"Moderate","cause":"Body cannot produce or properly use insulin.","symptoms":"Frequent urination, excessive thirst, fatigue.","prevention":"Healthy diet, exercise, maintain weight.","remedy":"Medication, insulin, lifestyle changes."},
+    "hypertension": {"severity":"Moderate","cause":"High blood pressure due to lifestyle/genetics.","symptoms":"Headache, dizziness, nosebleeds (sometimes asymptomatic).","prevention":"Low salt diet, exercise, avoid alcohol/smoking.","remedy":"Medication, lifestyle changes, monitor BP."},
+    "asthma": {"severity":"Moderate","cause":"Inflammation of airways, triggers include allergens.","symptoms":"Shortness of breath, wheezing, coughing.","prevention":"Avoid triggers, regular checkups.","remedy":"Inhalers, medications, avoid allergens."},
+    "migraine": {"severity":"Moderate","cause":"Neurological, triggered by stress, hormones, diet.","symptoms":"Severe headache, nausea, sensitivity to light/sound.","prevention":"Manage stress, avoid triggers, sleep well.","remedy":"Painkillers, rest, lifestyle management."},
+    "gastritis": {"severity":"Moderate","cause":"Stomach lining inflammation due to infection or NSAIDs.","symptoms":"Stomach pain, nausea, indigestion.","prevention":"Avoid irritants, healthy diet.","remedy":"Antacids, medications, diet adjustments."},
+    "uti": {"severity":"Moderate","cause":"Bacterial infection in urinary tract.","symptoms":"Painful urination, frequent urge to urinate.","prevention":"Hydration, hygiene, urinate after intercourse.","remedy":"Antibiotics, hydration."},
+    "skin infection": {"severity":"Moderate","cause":"Bacterial or fungal infections.","symptoms":"Rash, redness, itching.","prevention":"Hygiene, avoid contaminated surfaces.","remedy":"Topical or oral medications."},
+    "bronchitis": {"severity":"Moderate","cause":"Viral or bacterial infection of bronchi.","symptoms":"Cough, mucus, shortness of breath.","prevention":"Avoid smoking, good hygiene.","remedy":"Rest, fluids, medications if bacterial."},
+    "anemia": {"severity":"Moderate","cause":"Low hemoglobin, nutritional deficiency or chronic disease.","symptoms":"Fatigue, weakness, pallor.","prevention":"Iron-rich diet, supplements if needed.","remedy":"Iron supplements, diet changes."},
+    "thyroid disorder": {"severity":"Moderate","cause":"Hypo/Hyperthyroidism due to gland dysfunction.","symptoms":"Fatigue, weight changes, temperature sensitivity.","prevention":"Regular checkups, iodine-rich diet.","remedy":"Medication, monitoring hormone levels."},
 
-def integrate_expr(expr_str, var_str):
-    var = sp.symbols(var_str)
-    expr = parse_expr(expr_str)
-    integral = sp.integrate(expr, var)
-    return f"Integrating {expr} w.r.t {var} → Result: {integral}"
-
-def dagger_expr(expr_str):
-    expr = parse_expr(expr_str)
-    dag = Dagger(expr)
-    return f"Hermitian conjugate (dagger) of {expr} → {dag}"
-
-def quantum_eigen(matrix_list):
-    try:
-        mat = sp.Matrix(matrix_list)
-        eigenvals = mat.eigenvals()
-        eigenvects = mat.eigenvects()
-        return f"Eigenvalues: {eigenvals}\nEigenvectors: {eigenvects}"
-    except Exception as e:
-        return f"Error: {e}"
-
-def expectation_value(matrix_list, state_list):
-    try:
-        mat = sp.Matrix(matrix_list)
-        state = sp.Matrix(state_list)
-        val = (state.T * mat * state)[0]
-        return f"Expectation value: {val}"
-    except Exception as e:
-        return f"Error: {e}"
-
-def explain_quantum_concept(concept):
-    concept = concept.lower()
-    theory = {
-        "wavefunction": ("A wavefunction Ψ represents a quantum state; |Ψ|^2 is probability density.", 
-                         "https://en.wikipedia.org/wiki/Wave_function"),
-        "operator": ("Operator acts on a wavefunction to extract physical info.", 
-                     "https://en.wikipedia.org/wiki/Quantum_operator"),
-        "eigenvalue": ("Eigenvalue λ satisfies ÔΨ = λΨ, representing measurable quantities.", 
-                       "https://en.wikipedia.org/wiki/Eigenvalues_and_eigenvectors"),
-        "schrodinger equation": ("HΨ = iħ ∂Ψ/∂t governs time evolution of quantum states.", 
-                                 "https://en.wikipedia.org/wiki/Schr%C3%B6dinger_equation"),
-        "commutator": ("[A,B]=AB-BA; non-zero commutator → observables cannot be simultaneously measured.", 
-                       "https://en.wikipedia.org/wiki/Commutator"),
-        "expectation value": ("Expectation value <Ψ|O|Ψ> gives average measured value of observable.", 
-                              "https://en.wikipedia.org/wiki/Expectation_value_(quantum_mechanics)")
-    }
-    if concept in theory:
-        desc, link = theory[concept]
-        return f"{desc} More info: [Link]({link})"
-    else:
-        return "Sorry, concept not found. Check [Quantum Mechanics Wikipedia](https://en.wikipedia.org/wiki/Quantum_mechanics)."
+    # Major Diseases
+    "covid-19": {"severity":"Major","cause":"Infection by SARS-CoV-2 virus.","symptoms":"Fever, cough, shortness of breath, loss of taste/smell.","prevention":"Vaccination, masks, social distancing.","remedy":"Consult doctor, isolation, supportive care."},
+    "heart disease": {"severity":"Major","cause":"Coronary artery disease, plaque buildup.","symptoms":"Chest pain, shortness of breath, fatigue.","prevention":"Healthy diet, exercise, avoid smoking.","remedy":"Medication, surgery, lifestyle changes."},
+    "stroke": {"severity":"Major","cause":"Interruption of blood flow to brain.","symptoms":"Weakness, speech difficulty, facial droop.","prevention":"Control BP, healthy lifestyle.","remedy":"Immediate medical attention, rehabilitation."},
+    "cancer": {"severity":"Major","cause":"Uncontrolled cell growth in body tissues.","symptoms":"Varies by type; lumps, fatigue, weight loss.","prevention":"Avoid carcinogens, healthy lifestyle, screenings.","remedy":"Surgery, chemotherapy, radiation therapy."},
+    "ckd": {"severity":"Major","cause":"Chronic kidney damage over time.","symptoms":"Fatigue, swelling, decreased urine output.","prevention":"Control BP/diabetes, hydration.","remedy":"Dialysis, transplant, medications."},
+    "liver disease": {"severity":"Major","cause":"Hepatitis, alcohol, fatty liver.","symptoms":"Jaundice, fatigue, nausea.","prevention":"Avoid alcohol, vaccination, healthy diet.","remedy":"Medications, lifestyle changes, transplant in severe cases."},
+    "diabetes1": {"severity":"Major","cause":"Autoimmune destruction of insulin-producing cells.","symptoms":"High blood sugar, fatigue, frequent urination.","prevention":"No known prevention, early detection.","remedy":"Insulin therapy, monitoring blood sugar."},
+    "tb": {"severity":"Major","cause":"Bacterial infection by Mycobacterium tuberculosis.","symptoms":"Cough, weight loss, fever, night sweats.","prevention":"Vaccination (BCG), avoid infected contact.","remedy":"Long-term antibiotics."},
+    "pneumonia": {"severity":"Major","cause":"Lung infection (bacterial/viral).","symptoms":"Fever, cough, shortness of breath, chest pain.","prevention":"Vaccination, hygiene, avoid smoking.","remedy":"Antibiotics, hospitalization if severe."},
+    "hiv": {"severity":"Major","cause":"Viral infection attacking the immune system.","symptoms":"Flu-like symptoms initially; long-term immune suppression.","prevention":"Safe sex, avoid sharing needles.","remedy":"Antiretroviral therapy (ART)."}
+}
 
 # ---------- SESSION STATE ----------
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "feature" not in st.session_state:
     st.session_state.feature = "Doctor Help"
-if "last_image" not in st.session_state:
-    st.session_state.last_image = None
-if "last_link" not in st.session_state:
-    st.session_state.last_link = None
-if "last_bot_response" not in st.session_state:
-    st.session_state.last_bot_response = ""
-if "current_display_history" not in st.session_state:
-    st.session_state.current_display_history = []
 if "voice_lang" not in st.session_state:
     st.session_state.voice_lang = "en"
 
@@ -114,10 +81,7 @@ with st.sidebar:
     )
     if new_feature != st.session_state.feature:
         st.session_state.feature = new_feature
-        st.session_state.current_display_history = []
-        st.session_state.last_bot_response = ""
-        st.session_state.last_image = None
-        st.session_state.last_link = None
+        st.session_state.chat_history = []
     st.divider()
     st.subheader("🎙️ Voice Language")
     lang_options = {
@@ -137,165 +101,54 @@ with st.sidebar:
     for sender, msg in st.session_state.chat_history:
         st.markdown(f"**{sender}:** {msg}")
 
-# ---------- DYNAMIC PAGE TITLE ----------
+# ---------- PAGE TITLE ----------
 page_titles = {
     "Doctor Help": "🤖 AI Doctor",
     "Quantum Solver": "🤖 Quantum Professor",
     "Assistant": "🤖 AI Assistant"
 }
-current_title = page_titles.get(st.session_state.feature, "🤖 AI Assistant")
-st.set_page_config(page_title=current_title, page_icon="🤖", layout="wide")
-st.title(current_title)
-
-# ---------- DISPLAY CURRENT CHAT ----------
-for sender, msg in st.session_state.current_display_history:
-    if sender == "You":
-        st.markdown(f"**🧑 You:** {msg}")
-    else:
-        st.markdown(f"**🤖 Bot:** {msg}")
+st.set_page_config(page_title=page_titles.get(st.session_state.feature, "🤖 AI Assistant"), layout="wide")
+st.title(page_titles.get(st.session_state.feature, "🤖 AI Assistant"))
 
 # ---------- CHAT INPUT ----------
-user_input = st.text_input("Type your message here...")
+user_input = st.text_input("Type your message here...").lower()
 
 if user_input:
-    st.session_state.chat_history.append(("You", user_input))
-    st.session_state.current_display_history.append(("You", user_input))
-    user_input_lower = user_input.lower()
     bot_response = ""
+    st.session_state.chat_history.append(("You", user_input))
 
-    # ---------- FEATURE LOGIC ----------
     if st.session_state.feature == "Doctor Help":
-        if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hello! I am your personal AI doctor. How can I help you?"
-        elif "fever" in user_input_lower:
-            bot_response = "🤒 Fever\n• Cause: Usually infections.\n• Prevention: Hydrate & rest.\n• Remedy: Paracetamol if needed."
-        elif "cold" in user_input_lower:
-            bot_response = "🤧 Cold\n• Cause: Viral infection.\n• Prevention: Wash hands.\n• Remedy: Steam inhalation & rest."
-        elif "headache" in user_input_lower:
-            bot_response = "🤕 Headache\n• Cause: Stress, dehydration.\n• Prevention: Hydrate & rest.\n• Remedy: Mild painkillers."
+        # Symptom-based suggestion
+        found_diseases = []
+        for disease, info in disease_data.items():
+            if disease in user_input or any(symptom.lower() in user_input for symptom in info['symptoms'].split(", ")):
+                found_diseases.append(f"**{disease.title()} ({info['severity']})**: {info['remedy']}")
+        if found_diseases:
+            bot_response = "Possible diseases based on your input:\n" + "\n".join(found_diseases)
         else:
             bot_response = "I am here to help with health-related questions."
 
     elif st.session_state.feature == "Quantum Solver":
-        input_lower = user_input.lower()
-        if "hi" in input_lower or "hello" in input_lower:
-            bot_response = "Hi! I am your Quantum Professor. Ask me a math problem or quantum concept."
-        # Quantum functions
-        elif "solve" in input_lower:
-            try:
-                parts = input_lower.split("for")
-                eq_str = parts[0].replace("solve", "").strip()
-                var_str = parts[1].strip()
-                bot_response = solve_equation(eq_str, var_str)
-            except:
-                bot_response = "Use format: 'Solve <equation> for <variable>'."
-        elif "differentiate" in input_lower:
-            try:
-                parts = input_lower.split("for")
-                expr_str = parts[0].replace("differentiate", "").strip()
-                var_str = parts[1].strip()
-                bot_response = differentiate(expr_str, var_str)
-            except:
-                bot_response = "Use format: 'Differentiate <expression> for <variable>'."
-        elif "integrate" in input_lower:
-            try:
-                parts = input_lower.split("for")
-                expr_str = parts[0].replace("integrate", "").strip()
-                var_str = parts[1].strip()
-                bot_response = integrate_expr(expr_str, var_str)
-            except:
-                bot_response = "Use format: 'Integrate <expression> for <variable>'."
-        elif "dagger" in input_lower:
-            expr_str = input_lower.replace("dagger", "").strip()
-            bot_response = dagger_expr(expr_str)
-        elif "eigen" in input_lower:
-            try:
-                matrix_str = user_input.split("[",1)[1].rsplit("]",1)[0]
-                matrix_list = eval("["+matrix_str+"]")
-                bot_response = quantum_eigen(matrix_list)
-            except:
-                bot_response = "Use format: 'Eigen [[a,b],[c,d]]'"
-        elif "expectation" in input_lower:
-            try:
-                parts = user_input.split("] [")
-                matrix_list = eval(parts[0].split("[",1)[1]+"]")
-                state_list = eval("["+parts[1].replace("]","")+"]")
-                bot_response = expectation_value(matrix_list, state_list)
-            except:
-                bot_response = "Use format: 'Expectation [[O]] [state]'"
-        # Math Solver fallback
-        else:
-            try:
-                expr = parse_expr(user_input_lower)
-                simplified = simplify(expr)
-                bot_response = f"✅ Simplified Result: {simplified}"
-            except:
-                try:
-                    if "=" in user_input:
-                        lhs, rhs = user_input.split("=")
-                        x = symbols('x')
-                        eq = Eq(parse_expr(lhs), parse_expr(rhs))
-                        sol = solve(eq, x)
-                        bot_response = f"✅ Solution: {sol}"
-                    else:
-                        bot_response = "Invalid math expression."
-                except:
-                    bot_response = "I couldn't parse the math problem."
+        try:
+            expr = parse_expr(user_input)
+            simplified = simplify(expr)
+            bot_response = f"✅ Simplified Result: {simplified}"
+        except:
+            bot_response = "I couldn't parse the math problem."
 
     elif st.session_state.feature == "Assistant":
-        if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hello! Ask me about any topic and I will fetch info from Wikipedia."
-            st.session_state.last_image = None
-            st.session_state.last_link = None
-        else:
-            try:
-                summary = wikipedia.summary(user_input, sentences=2)
-                page = wikipedia.page(user_input)
-                bot_response = summary
-                st.session_state.last_image = page.images[0] if page.images else None
-                st.session_state.last_link = page.url
-            except:
-                bot_response = "Sorry, I couldn't find information on that topic."
-                st.session_state.last_image = None
-                st.session_state.last_link = None
+        try:
+            summary = wikipedia.summary(user_input, sentences=2)
+            bot_response = summary
+        except:
+            bot_response = "Sorry, I couldn't find information on that topic."
 
-    # Save response and speak
     st.session_state.chat_history.append(("Bot", bot_response))
-    st.session_state.current_display_history.append(("Bot", bot_response))
-    st.session_state.last_bot_response = bot_response
     speak_text(bot_response, lang=st.session_state.voice_lang)
 
-# ---------- SHOW BOT RESPONSE BELOW INPUT ----------
-if st.session_state.last_bot_response:
-    st.markdown(f"**🤖 Bot:** {st.session_state.last_bot_response}")
-
-# ---------- DISPLAY ASSISTANT IMAGE/LINK ----------
-if st.session_state.feature == "Assistant":
-    if st.session_state.last_image:
-        st.image(st.session_state.last_image, width=200)
-    if st.session_state.last_link:
-        st.markdown(f"[More Info 🔗]({st.session_state.last_link})")
-
-# ---------- SMALL LIT HEART AT BOTTOM ----------
-st.markdown(
-    """
-    <style>
-    .lit-heart {
-        position: fixed;
-        bottom: 5px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 20px;
-        color: red;
-        animation: pulse 1s infinite;
-    }
-    @keyframes pulse {
-        0% { transform: translateX(-50%) scale(1); }
-        50% { transform: translateX(-50%) scale(1.2); }
-        100% { transform: translateX(-50%) scale(1); }
-    }
-    </style>
-    <div class="lit-heart">❤️</div>
-    """,
-    unsafe_allow_html=True
-)
+# ---------- DISPLAY CHAT ----------
+for speaker, text in st.session_state.chat_history:
+    if speaker == "You":
+        st.markdown(f"**🧑 You:** {text}")
+    else:
+        st.markdown(f"**🤖 Bot:** {text}")
