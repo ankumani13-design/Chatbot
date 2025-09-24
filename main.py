@@ -32,7 +32,7 @@ st.title("🤖 AI Assistant")
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = {
         "Doctor Help": [],
-        "Math Solver": [],
+        "Quantum Solver": [],
         "Assistant": []
     }
 if "feature" not in st.session_state:
@@ -49,7 +49,7 @@ with st.sidebar:
     st.header("Select Feature")
     new_feature = st.radio(
         "Features",
-        ("Doctor Help", "Math Solver", "Assistant"),
+        ("Doctor Help", "Quantum Solver", "Assistant"),
         key="feature_radio"
     )
 
@@ -64,11 +64,12 @@ st.session_state.feature = new_feature
 # ---------- CHAT INPUT ----------
 user_input = st.text_input("Type your message here...")
 
+bot_response = None  # Initialize
+
 if user_input:
     # Save user input
     st.session_state.chat_history[st.session_state.feature].append(("You", user_input))
     user_input_lower = user_input.lower()
-    bot_response = ""
 
     # ---------- FEATURE LOGIC ----------
     if st.session_state.feature == "Doctor Help":
@@ -76,52 +77,61 @@ if user_input:
             bot_response = "Hello! I am your personal AI doctor. How can I help you?"
         elif "fever" in user_input_lower:
             bot_response = (
-                "🤒 Fever\n"
-                "• Cause: Usually due to infections like flu or cold.\n"
-                "• Prevention: Stay hydrated, rest, maintain hygiene.\n"
-                "• Remedy: Take paracetamol and consult a doctor if high fever persists."
+                "🤒 **Fever**\n\n"
+                "**Causes:** Viral or bacterial infections, flu, common cold.\n\n"
+                "**Prevention:** Wash hands, maintain hygiene, stay hydrated.\n\n"
+                "**Remedy:** Rest, drink fluids, take paracetamol if needed. "
+                "Consult a doctor if fever persists or is above 102°F."
             )
         elif "cold" in user_input_lower:
             bot_response = (
-                "🤧 Cold\n"
-                "• Cause: Viral infection of upper respiratory tract.\n"
-                "• Prevention: Wash hands, maintain warm environment.\n"
-                "• Remedy: Steam inhalation, warm fluids, rest well."
+                "🤧 **Cold**\n\n"
+                "**Causes:** Viral infection of the respiratory tract.\n\n"
+                "**Prevention:** Avoid contact with infected people, wash hands often.\n\n"
+                "**Remedy:** Steam inhalation, warm fluids, vitamin C-rich foods."
             )
         elif "headache" in user_input_lower:
             bot_response = (
-                "🤕 Headache\n"
-                "• Cause: Stress, dehydration, eye strain, migraine.\n"
-                "• Prevention: Hydrate, sleep well, avoid excessive screens.\n"
-                "• Remedy: Rest, hydration, mild painkillers if needed."
+                "🤕 **Headache**\n\n"
+                "**Causes:** Stress, dehydration, eye strain, lack of sleep.\n\n"
+                "**Prevention:** Stay hydrated, reduce screen time, sleep 7–8 hours.\n\n"
+                "**Remedy:** Rest, drink water, mild painkillers if needed."
             )
         else:
-            bot_response = "I am here to help you with health-related questions."
+            bot_response = "I can assist you with common health issues like fever, cold, or headache."
 
-    elif st.session_state.feature == "Math Solver":
+    elif st.session_state.feature == "Quantum Solver":
         if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hi! I am your AI professor. How can I help you today?"
+            bot_response = "Greetings! I am your AI Quantum Professor. What problem shall we solve today?"
         else:
             try:
-                expr = parse_expr(user_input_lower)
-                simplified = simplify(expr)
-                bot_response = f"✅ Simplified Result: {simplified}"
+                if "=" in user_input:
+                    lhs, rhs = user_input.split("=")
+                    x = symbols('x')
+                    eq = Eq(parse_expr(lhs), parse_expr(rhs))
+                    sol = solve(eq, x)
+                    bot_response = (
+                        f"🔬 **Quantum Solution Mode**\n\n"
+                        f"Equation: {lhs} = {rhs}\n\n"
+                        f"Mathematical Roots: {sol}\n\n"
+                        f"In quantum terms, this represents a possible state collapse "
+                        f"where `x` stabilizes into the given solution(s)."
+                    )
+                else:
+                    expr = parse_expr(user_input_lower)
+                    simplified = simplify(expr)
+                    bot_response = (
+                        f"🔬 **Quantum Simplification**\n\n"
+                        f"Expression: {user_input}\n\n"
+                        f"Result: {simplified}\n\n"
+                        f"In quantum analogy, this is the reduced wavefunction of the system."
+                    )
             except:
-                try:
-                    if "=" in user_input:
-                        lhs, rhs = user_input.split("=")
-                        x = symbols('x')
-                        eq = Eq(parse_expr(lhs), parse_expr(rhs))
-                        sol = solve(eq, x)
-                        bot_response = f"✅ Solution: {sol}"
-                    else:
-                        bot_response = "Invalid math expression."
-                except:
-                    bot_response = "I couldn't parse the math problem."
+                bot_response = "I couldn't interpret the quantum equation. Try again with a valid expression."
 
     elif st.session_state.feature == "Assistant":
         if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hello! I am your AI assistant. Ask me about any topic."
+            bot_response = "Hello! I am your AI Assistant. Ask me about any topic."
             st.session_state.last_image = None
             st.session_state.last_link = None
         else:
@@ -137,10 +147,11 @@ if user_input:
                 st.session_state.last_link = None
 
     # Save bot response
-    st.session_state.chat_history[st.session_state.feature].append(("Bot", bot_response))
-    speak_text(bot_response)
+    if bot_response:
+        st.session_state.chat_history[st.session_state.feature].append(("Bot", bot_response))
+        speak_text(bot_response)
 
-# ---------- DISPLAY CHAT (below input) ----------
+# ---------- DISPLAY CHAT BELOW INPUT ----------
 st.subheader("💬 Conversation")
 for sender, msg in st.session_state.chat_history[st.session_state.feature]:
     if sender == "You":
