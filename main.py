@@ -29,6 +29,8 @@ if "feature" not in st.session_state:
     st.session_state.feature = "Assistant"
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = {"Assistant": [], "Doctor Help": [], "Quantum Professor": []}
+if "user_input" not in st.session_state:
+    st.session_state.user_input = ""  # to reset text box after send
 
 # ---------------- SIDEBAR ----------------
 st.sidebar.title("📜 Chat History")
@@ -85,7 +87,8 @@ def get_bot_response(user_input, mode):
 # ---------------- MAIN CHAT ----------------
 chat_container = st.container()
 
-user_input = st.chat_input("Type your message...")
+# Input box (persistent key to reset)
+user_input = st.text_input("Type your message...", key="main_input")
 
 if user_input:
     # Save user input
@@ -97,6 +100,9 @@ if user_input:
 
     # Voice output
     speak_text(bot_response)
+
+    # Clear text box after send
+    st.session_state.main_input = ""
 
 # ---------------- DISPLAY CHAT BELOW INPUT ----------------
 with chat_container:
