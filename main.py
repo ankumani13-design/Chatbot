@@ -26,21 +26,7 @@ def speak_text(text, lang="en"):
         st.error(f"Voice error: {e}")
 
 # ---------- QUANTUM SOLVER FUNCTIONS ----------
-def quantum_reply(user_input):
-    try:
-        expr = sp.sympify(user_input)
-        simplified = sp.simplify(expr)
-        return f"Simplified Result: {simplified}"
-    except:
-        if "=" in user_input:
-            try:
-                lhs, rhs = user_input.split("=")
-                x = sp.symbols('x')
-                eq = sp.Eq(sp.sympify(lhs), sp.sympify(rhs))
-                sol = sp.solve(eq, x)
-                return f"Solution: {sol}"
-            except:
-                return "Cannot solve this equation."
+
 def solve_equation(eq_str, var_str):
     var = sp.symbols(var_str)
     eq = parse_expr(eq_str)
@@ -303,4 +289,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
