@@ -7,74 +7,66 @@ from sympy.parsing.sympy_parser import parse_expr
 
 # ---------- VOICE FUNCTION ----------
 def speak_text(text):
-    # Use gTTS with normal speed and clear English
-    tts = gTTS(text=text, lang="en", slow=False)
-    file_path = "voice.mp3"
-    tts.save(file_path)
-    with open(file_path, "rb") as f:
-        audio_bytes = f.read()
-    audio_base64 = base64.b64encode(audio_bytes).decode()
-    audio_html = f"""
-        <audio autoplay>
-            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-        </audio>
-    """
-    st.markdown(audio_html, unsafe_allow_html=True)
+    """Convert text to speech and autoplay"""
+    try:
+        tts = gTTS(text=text, lang="en", slow=False)
+        file_path = "voice.mp3"
+        tts.save(file_path)
+        with open(file_path, "rb") as f:
+            audio_bytes = f.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+        audio_html = f"""
+            <audio autoplay>
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+        """
+        st.markdown(audio_html, unsafe_allow_html=True)
+    except Exception:
+        pass
+
+# ---------- APP CONFIG ----------
+st.set_page_config(page_title="AI Assistant", page_icon="🤖", layout="wide")
+st.title("🤖 AI Assistant")
 
 # ---------- SESSION STATE ----------
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+    st.session_state.chat_history = {
+        "Doctor Help": [],
+        "Math Solver": [],
+        "Assistant": []
+    }
 if "feature" not in st.session_state:
     st.session_state.feature = "Doctor Help"
+if "active_feature" not in st.session_state:
+    st.session_state.active_feature = "Doctor Help"
 if "last_image" not in st.session_state:
     st.session_state.last_image = None
 if "last_link" not in st.session_state:
     st.session_state.last_link = None
-if "current_display_history" not in st.session_state:
-    st.session_state.current_display_history = []
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
     st.header("Select Feature")
     new_feature = st.radio(
         "Features",
-        ("Doctor Help", "Math Solver", "Assistant")
+        ("Doctor Help", "Math Solver", "Assistant"),
+        key="feature_radio"
     )
-    # Clear main display if feature changes
-    if new_feature != st.session_state.feature:
-        st.session_state.feature = new_feature
-        st.session_state.current_display_history = []
-        st.session_state.last_image = None
-        st.session_state.last_link = None
 
-    st.divider()
-    st.header("📜 Chat History")
-    for sender, msg in st.session_state.chat_history:
-        st.markdown(f"**{sender}:** {msg}")
+# Reset chat when switching features
+if new_feature != st.session_state.active_feature:
+    st.session_state.active_feature = new_feature
+    st.session_state.last_image = None
+    st.session_state.last_link = None
 
-# ---------- DYNAMIC PAGE TITLE ----------
-page_titles = {
-    "Doctor Help": "🤖 AI Doctor",
-    "Math Solver": "🤖 AI Professor",
-    "Assistant": "🤖 AI Assistant"
-}
-st.set_page_config(page_title=page_titles.get(st.session_state.feature, "🤖 AI Assistant"), page_icon="🤖", layout="wide")
-st.title(page_titles.get(st.session_state.feature, "🤖 AI Assistant"))
-
-# ---------- DISPLAY CURRENT CHAT ----------
-for sender, msg in st.session_state.current_display_history:
-    if sender == "You":
-        st.markdown(f"**🧑 You:** {msg}")
-    else:
-        st.markdown(f"**🤖 Bot:** {msg}")
+st.session_state.feature = new_feature
 
 # ---------- CHAT INPUT ----------
 user_input = st.text_input("Type your message here...")
 
 if user_input:
-    # Save user message
-    st.session_state.chat_history.append(("You", user_input))
-    st.session_state.current_display_history.append(("You", user_input))
+    # Save user input
+    st.session_state.chat_history[st.session_state.feature].append(("You", user_input))
     user_input_lower = user_input.lower()
     bot_response = ""
 
@@ -129,7 +121,7 @@ if user_input:
 
     elif st.session_state.feature == "Assistant":
         if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hello! Ask me about any topic and I will fetch info from Wikipedia."
+            bot_response = "Hello! I am your AI assistant. Ask me about any topic."
             st.session_state.last_image = None
             st.session_state.last_link = None
         else:
@@ -144,12 +136,19 @@ if user_input:
                 st.session_state.last_image = None
                 st.session_state.last_link = None
 
-    # Save bot response and speak
-    st.session_state.chat_history.append(("Bot", bot_response))
-    st.session_state.current_display_history.append(("Bot", bot_response))
+    # Save bot response
+    st.session_state.chat_history[st.session_state.feature].append(("Bot", bot_response))
     speak_text(bot_response)
 
-# ---------- DISPLAY ASSISTANT IMAGE/LINK ----------
+# ---------- DISPLAY CHAT (below input) ----------
+st.subheader("💬 Conversation")
+for sender, msg in st.session_state.chat_history[st.session_state.feature]:
+    if sender == "You":
+        st.markdown(f"**🧑 You:** {msg}")
+    else:
+        st.markdown(f"**🤖 {st.session_state.feature}:** {msg}")
+
+# ---------- DISPLAY WIKI IMAGE/LINK ----------
 if st.session_state.feature == "Assistant":
     if st.session_state.last_image:
         st.image(st.session_state.last_image, width=200)
@@ -165,7 +164,7 @@ st.markdown(
         bottom: 5px;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 20px;
+        font-size: 25px;
         color: red;
         animation: pulse 1s infinite;
     }
