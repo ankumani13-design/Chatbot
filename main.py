@@ -9,28 +9,31 @@ st.set_page_config(page_title="AI Assistant", page_icon="🤖", layout="wide")
 
 # ---------------- VOICE FUNCTION ----------------
 def speak_text(text):
-    tts = gTTS(text=text, lang="en")
-    file_path = "voice.mp3"
-    tts.save(file_path)
+    try:
+        tts = gTTS(text=text, lang="en", slow=False)
+        file_path = "voice.mp3"
+        tts.save(file_path)
 
-    with open(file_path, "rb") as f:
-        audio_bytes = f.read()
-    audio_base64 = base64.b64encode(audio_bytes).decode()
+        with open(file_path, "rb") as f:
+            audio_bytes = f.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode()
 
-    audio_html = f"""
-        <audio autoplay>
-            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-        </audio>
-    """
-    st.markdown(audio_html, unsafe_allow_html=True)
+        audio_html = f"""
+            <audio autoplay>
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+        """
+        st.markdown(audio_html, unsafe_allow_html=True)
+    except:
+        st.warning("⚠️ Voice output failed. Please check gTTS.")
 
 # ---------------- SESSION STATE ----------------
 if "feature" not in st.session_state:
     st.session_state.feature = "Assistant"
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = {"Assistant": [], "Doctor Help": [], "Quantum Professor": []}
-if "user_input" not in st.session_state:
-    st.session_state.user_input = ""  # to reset text box after send
+if "input_counter" not in st.session_state:
+    st.session_state.input_counter = 0  # used to reset text box
 
 # ---------------- SIDEBAR ----------------
 st.sidebar.title("📜 Chat History")
@@ -66,11 +69,11 @@ def get_bot_response(user_input, mode):
         if "hi" in user_input or "hello" in user_input:
             return "Hello! I am your personal AI Doctor. How can I help you today?"
         elif "fever" in user_input:
-            return "Fever is usually caused by infections (viral or bacterial). 🩺\n\n**Prevention:** Stay hydrated, rest well, and maintain hygiene.\n**Tip:** If fever persists, consult a doctor."
+            return "🤒 Fever is usually caused by infections.\n\n**Prevention:** Stay hydrated, rest, and maintain hygiene."
         elif "cold" in user_input:
-            return "Cold is often caused by viral infections. 🤧\n\n**Prevention:** Wash hands, avoid cold exposure, eat vitamin C rich foods."
+            return "🤧 Cold is often caused by viral infections.\n\n**Prevention:** Wash hands, stay warm, eat vitamin C."
         elif "headache" in user_input:
-            return "Headache can be due to stress, dehydration, or lack of sleep. 💆‍♀️\n\n**Prevention:** Drink water, rest properly, and manage stress."
+            return "🤕 Headache can be due to stress or dehydration.\n\n**Prevention:** Drink water, sleep well, reduce screen time."
         else:
             return "I can help with common health issues like fever, cold, and headache."
 
@@ -79,16 +82,16 @@ def get_bot_response(user_input, mode):
             return "Hello! I am your AI Professor. How can I assist with your math today?"
         try:
             expr = sp.sympify(user_input)
-            result = sp.simplify(expr)
-            return f"✅ Solution: **{result}**"
+            simplified = sp.simplify(expr)
+            return f"✅ Simplified Result: **{simplified}**"
         except Exception:
             return "Please provide a valid math expression. Example: `2+3*4` or `sin(pi/2)`."
 
 # ---------------- MAIN CHAT ----------------
 chat_container = st.container()
 
-# Input box (persistent key to reset)
-user_input = st.text_input("Type your message...", key="main_input")
+# Input box with dynamic key (resets automatically after each message)
+user_input = st.text_input("Type your message...", key=f"input_{st.session_state.input_counter}")
 
 if user_input:
     # Save user input
@@ -101,8 +104,9 @@ if user_input:
     # Voice output
     speak_text(bot_response)
 
-    # Clear text box after send
-    st.session_state.main_input = ""
+    # Force input box reset by increasing counter
+    st.session_state.input_counter += 1
+    st.rerun()
 
 # ---------------- DISPLAY CHAT BELOW INPUT ----------------
 with chat_container:
