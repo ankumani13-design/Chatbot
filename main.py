@@ -1,25 +1,28 @@
 import streamlit as st
 from gtts import gTTS
 import base64
-import sympy as sp
+import wikipedia
+from sympy import symbols, Eq, solve, simplify
+from sympy.parsing.sympy_parser import parse_expr
 
 # ---------- VOICE FUNCTION ----------
 def speak_text(text):
+    """Convert text to speech and autoplay"""
     try:
-        tts = gTTS(text=text, lang="en")
+        tts = gTTS(text=text, lang="en", slow=False)
         file_path = "voice.mp3"
         tts.save(file_path)
-        audio_file = open(file_path, "rb")
-        audio_bytes = audio_file.read()
-        b64 = base64.b64encode(audio_bytes).decode()
+        with open(file_path, "rb") as f:
+            audio_bytes = f.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode()
         audio_html = f"""
             <audio autoplay>
-                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
             </audio>
         """
         st.markdown(audio_html, unsafe_allow_html=True)
-    except Exception as e:
-        st.error(f"Voice error: {e}")
+    except Exception:
+        pass
 
 # ---------- INITIALIZE SESSION STATE ----------
 if "chat_history" not in st.session_state:
@@ -138,4 +141,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
