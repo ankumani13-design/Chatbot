@@ -120,7 +120,7 @@ disease_data = {
     "cancer": { "cause": "Uncontrolled cell growth in body tissues.", "symptoms": "Varies by type; lumps, fatigue, weight loss.", "prevention": "Avoid carcinogens, healthy lifestyle, screenings.", "remedy": "Surgery, chemotherapy, radiation therapy."},
     "ckd": { "cause": "Chronic kidney damage over time.", "symptoms": "Fatigue, swelling, decreased urine output.", "prevention": "Control BP/diabetes, hydration.", "remedy": "Dialysis, transplant, medications."},
     "liver disease": {"cause": "Hepatitis, alcohol, fatty liver.", "symptoms": "Jaundice, fatigue, nausea.", "prevention": "Avoid alcohol, vaccination, healthy diet.", "remedy": "Medications, lifestyle changes, transplant in severe cases."},
-    "diabetes1": {, "cause": "Autoimmune destruction of insulin-producing cells.", "symptoms": "High blood sugar, fatigue, frequent urination.", "prevention": "No known prevention, early detection.", "remedy": "Insulin therapy, monitoring blood sugar."},
+    "diabetes1": {"cause": "Autoimmune destruction of insulin-producing cells.", "symptoms": "High blood sugar, fatigue, frequent urination.", "prevention": "No known prevention, early detection.", "remedy": "Insulin therapy, monitoring blood sugar."},
     "tb": { "cause": "Bacterial infection by Mycobacterium tuberculosis.", "symptoms": "Cough, weight loss, fever, night sweats.", "prevention": "Vaccination (BCG), avoid infected contact.", "remedy": "Long-term antibiotics."},
     "pneumonia": { "cause": "Lung infection (bacterial/viral).", "symptoms": "Fever, cough, shortness of breath, chest pain.", "prevention": "Vaccination, hygiene, avoid smoking.", "remedy": "Antibiotics, hospitalization if severe."},
     "hiv": { "cause": "Viral infection attacking the immune system.", "symptoms": "Flu-like symptoms initially; long-term immune suppression.", "prevention": "Safe sex, avoid sharing needles.", "remedy": "Antiretroviral therapy (ART)."}
@@ -254,10 +254,10 @@ if user_input:
                 except:
                     bot_response = "I couldn't parse the math problem."
 
-    # ---------- ASSISTANT FEATURE (FRIENDLY + 2-LINES + WIKI LINK) ----------
+    # ---------- ASSISTANT FEATURE ----------
     elif st.session_state.feature == "Assistant":
         if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hello!how's it going."
+            bot_response = "Hello! How's it going?"
             st.session_state.last_image = None
             st.session_state.last_link = None
         else:
@@ -297,4 +297,3 @@ st.markdown("""
 </style>
 <div class="lit-heart">❤️</div>
 """, unsafe_allow_html=True)
-
