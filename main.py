@@ -270,4 +270,20 @@ st.markdown(
     <style>
     .lit-heart {
         position: fixed;
-        bottom
+        bottom: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 20px;
+        color: red;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: translateX(-50%) scale(1); }
+        50% { transform: translateX(-50%) scale(1.2); }
+        100% { transform: translateX(-50%) scale(1); }
+    }
+    </style>
+    <div class="lit-heart">❤️</div>
+    """,
+    unsafe_allow_html=True
+)
