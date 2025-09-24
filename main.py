@@ -254,17 +254,17 @@ if user_input:
                 except:
                     bot_response = "I couldn't parse the math problem."
 
-    # ---------- ASSISTANT FEATURE ----------
+    # ---------- ASSISTANT FEATURE (FRIENDLY + 2-LINES + WIKI LINK) ----------
     elif st.session_state.feature == "Assistant":
         if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hello! Ask me about any topic and I will fetch info from Wikipedia."
+            bot_response = "Hello! Ask me anything and I will give a short answer plus a reference link."
             st.session_state.last_image = None
             st.session_state.last_link = None
         else:
             try:
                 summary = wikipedia.summary(user_input, sentences=2)
                 page = wikipedia.page(user_input)
-                bot_response = summary
+                bot_response = f"{summary} More info: [Link]({page.url})"
                 st.session_state.last_image = page.images[0] if page.images else None
                 st.session_state.last_link = page.url
             except:
