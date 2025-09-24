@@ -53,11 +53,20 @@ with st.sidebar:
         key="feature_radio"
     )
 
+    st.markdown("---")
+    st.subheader("📜 Chat History")
+    for feat, chats in st.session_state.chat_history.items():
+        if chats:
+            st.markdown(f"**{feat}:**")
+            for sender, msg in chats[-3:]:  # show last 3 messages
+                st.markdown(f"- {sender}: {msg[:40]}...")
+
 # Reset chat when switching features
 if new_feature != st.session_state.active_feature:
     st.session_state.active_feature = new_feature
     st.session_state.last_image = None
     st.session_state.last_link = None
+    st.session_state.chat_history[new_feature] = []  # clear on switch
 
 st.session_state.feature = new_feature
 
