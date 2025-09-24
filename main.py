@@ -7,127 +7,165 @@ from sympy.parsing.sympy_parser import parse_expr
 
 # ---------- VOICE FUNCTION ----------
 def speak_text(text):
-    """Convert text to speech and autoplay"""
-    try:
-        tts = gTTS(text=text, lang="en", slow=False)
-        file_path = "voice.mp3"
-        tts.save(file_path)
-        with open(file_path, "rb") as f:
-            audio_bytes = f.read()
-        audio_base64 = base64.b64encode(audio_bytes).decode()
-        audio_html = f"""
-            <audio autoplay>
-                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-            </audio>
-        """
-        st.markdown(audio_html, unsafe_allow_html=True)
-    except Exception:
-        pass
+    # Use gTTS with normal speed and clear English
+    tts = gTTS(text=text, lang="en", slow=False)
+    file_path = "voice.mp3"
+    tts.save(file_path)
+    with open(file_path, "rb") as f:
+        audio_bytes = f.read()
+    audio_base64 = base64.b64encode(audio_bytes).decode()
+    audio_html = f"""
+        <audio autoplay>
+            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+        </audio>
+    """
+    st.markdown(audio_html, unsafe_allow_html=True)
 
-# ---------- INITIALIZE SESSION STATE ----------
+# ---------- SESSION STATE ----------
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-if "role" not in st.session_state:
-    st.session_state.role = "Assistant"
+if "feature" not in st.session_state:
+    st.session_state.feature = "Doctor Help"
+if "last_image" not in st.session_state:
+    st.session_state.last_image = None
+if "last_link" not in st.session_state:
+    st.session_state.last_link = None
+if "current_display_history" not in st.session_state:
+    st.session_state.current_display_history = []
 
 # ---------- SIDEBAR ----------
-role = st.sidebar.selectbox("Choose Role", ["Assistant", "AI Doctor", "Professor Quantum"])
+with st.sidebar:
+    st.header("Select Feature")
+    new_feature = st.radio(
+        "Features",
+        ("Doctor Help", "Math Solver", "Assistant")
+    )
+    # Clear main display if feature changes
+    if new_feature != st.session_state.feature:
+        st.session_state.feature = new_feature
+        st.session_state.current_display_history = []
+        st.session_state.last_image = None
+        st.session_state.last_link = None
 
-# Reset chat when switching role
-if role != st.session_state.role:
-    st.session_state.chat_history = []
-    st.session_state.role = role
+    st.divider()
+    st.header("📜 Chat History")
+    for sender, msg in st.session_state.chat_history:
+        st.markdown(f"**{sender}:** {msg}")
 
-# ---------- TITLE ----------
-st.title(f"🤖 {role}")
+# ---------- DYNAMIC PAGE TITLE ----------
+page_titles = {
+    "Doctor Help": "🤖 AI Doctor",
+    "Math Solver": "🤖 AI Professor",
+    "Assistant": "🤖 AI Assistant"
+}
+st.set_page_config(page_title=page_titles.get(st.session_state.feature, "🤖 AI Assistant"), page_icon="🤖", layout="wide")
+st.title(page_titles.get(st.session_state.feature, "🤖 AI Assistant"))
 
-# ---------- HELPER FUNCTIONS ----------
-def doctor_reply(user_input):
-    user_input_lower = user_input.lower()
-    if "hi" in user_input_lower or "hello" in user_input_lower:
-        return "Hello! I am your personal AI Doctor. How can I help you?"
-    elif "fever" in user_input_lower:
-        return (
-            "🤒 Fever\n"
-            "• Cause: Usually infections like flu or cold.\n"
-            "• Prevention: Hydration, rest, maintain hygiene.\n"
-            "• Remedy: Take paracetamol and consult a doctor if high fever persists."
-        )
-    elif "cold" in user_input_lower:
-        return (
-            "🤧 Cold\n"
-            "• Cause: Viral infection of upper respiratory tract.\n"
-            "• Prevention: Wash hands, stay warm.\n"
-            "• Remedy: Steam inhalation, fluids, rest."
-        )
-    elif "headache" in user_input_lower:
-        return (
-            "🤕 Headache\n"
-            "• Cause: Stress, dehydration, eye strain.\n"
-            "• Prevention: Hydrate, sleep well.\n"
-            "• Remedy: Rest, mild painkillers if needed."
-        )
+# ---------- DISPLAY CURRENT CHAT ----------
+for sender, msg in st.session_state.current_display_history:
+    if sender == "You":
+        st.markdown(f"**🧑 You:** {msg}")
     else:
-        return "I am here to help you with health-related questions."
-
-def quantum_reply(user_input):
-    try:
-        expr = sp.sympify(user_input)
-        simplified = sp.simplify(expr)
-        return f"Simplified Result: {simplified}"
-    except:
-        if "=" in user_input:
-            try:
-                lhs, rhs = user_input.split("=")
-                x = sp.symbols('x')
-                eq = sp.Eq(sp.sympify(lhs), sp.sympify(rhs))
-                sol = sp.solve(eq, x)
-                return f"Solution: {sol}"
-            except:
-                return "Cannot solve this equation."
-        return "I couldn't parse this math problem."
+        st.markdown(f"**🤖 Bot:** {msg}")
 
 # ---------- CHAT INPUT ----------
-user_input = st.text_input("Type your message here...", key="chat_input")
+user_input = st.text_input("Type your message here...")
 
 if user_input:
-    # Add user message
+    # Save user message
     st.session_state.chat_history.append(("You", user_input))
+    st.session_state.current_display_history.append(("You", user_input))
+    user_input_lower = user_input.lower()
+    bot_response = ""
 
-    # Determine bot response
-    if role == "Assistant":
-        bot_response = f"{user_input}"  # direct response, no "You said"
-    elif role == "AI Doctor":
-        bot_response = doctor_reply(user_input)
-    elif role == "Professor Quantum":
-        bot_response = quantum_reply(user_input)
-    else:
-        bot_response = user_input
+    # ---------- FEATURE LOGIC ----------
+    if st.session_state.feature == "Doctor Help":
+        if "hi" in user_input_lower or "hello" in user_input_lower:
+            bot_response = "Hello! I am your personal AI doctor. How can I help you?"
+        elif "fever" in user_input_lower:
+            bot_response = (
+                "🤒 Fever\n"
+                "• Cause: Usually due to infections like flu or cold.\n"
+                "• Prevention: Stay hydrated, rest, maintain hygiene.\n"
+                "• Remedy: Take paracetamol and consult a doctor if high fever persists."
+            )
+        elif "cold" in user_input_lower:
+            bot_response = (
+                "🤧 Cold\n"
+                "• Cause: Viral infection of upper respiratory tract.\n"
+                "• Prevention: Wash hands, maintain warm environment.\n"
+                "• Remedy: Steam inhalation, warm fluids, rest well."
+            )
+        elif "headache" in user_input_lower:
+            bot_response = (
+                "🤕 Headache\n"
+                "• Cause: Stress, dehydration, eye strain, migraine.\n"
+                "• Prevention: Hydrate, sleep well, avoid excessive screens.\n"
+                "• Remedy: Rest, hydration, mild painkillers if needed."
+            )
+        else:
+            bot_response = "I am here to help you with health-related questions."
 
-    # Add bot response
-    st.session_state.chat_history.append((role, bot_response))
+    elif st.session_state.feature == "Math Solver":
+        if "hi" in user_input_lower or "hello" in user_input_lower:
+            bot_response = "Hi! I am your AI professor. How can I help you today?"
+        else:
+            try:
+                expr = parse_expr(user_input_lower)
+                simplified = simplify(expr)
+                bot_response = f"✅ Simplified Result: {simplified}"
+            except:
+                try:
+                    if "=" in user_input:
+                        lhs, rhs = user_input.split("=")
+                        x = symbols('x')
+                        eq = Eq(parse_expr(lhs), parse_expr(rhs))
+                        sol = solve(eq, x)
+                        bot_response = f"✅ Solution: {sol}"
+                    else:
+                        bot_response = "Invalid math expression."
+                except:
+                    bot_response = "I couldn't parse the math problem."
 
-    # Speak automatically
+    elif st.session_state.feature == "Assistant":
+        if "hi" in user_input_lower or "hello" in user_input_lower:
+            bot_response = "Hello! Ask me about any topic and I will fetch info from Wikipedia."
+            st.session_state.last_image = None
+            st.session_state.last_link = None
+        else:
+            try:
+                summary = wikipedia.summary(user_input, sentences=2)
+                page = wikipedia.page(user_input)
+                bot_response = summary
+                st.session_state.last_image = page.images[0] if page.images else None
+                st.session_state.last_link = page.url
+            except:
+                bot_response = "Sorry, I couldn't find information on that topic."
+                st.session_state.last_image = None
+                st.session_state.last_link = None
+
+    # Save bot response and speak
+    st.session_state.chat_history.append(("Bot", bot_response))
+    st.session_state.current_display_history.append(("Bot", bot_response))
     speak_text(bot_response)
 
-# ---------- DISPLAY CHAT BELOW INPUT ----------
-st.markdown("### Chat History")
-for sender, msg in st.session_state.chat_history:
-    if sender == "You":
-        st.markdown(f"🧑 **You:** {msg}")
-    else:
-        st.markdown(f"🤖 **{sender}:** {msg}")
+# ---------- DISPLAY ASSISTANT IMAGE/LINK ----------
+if st.session_state.feature == "Assistant":
+    if st.session_state.last_image:
+        st.image(st.session_state.last_image, width=200)
+    if st.session_state.last_link:
+        st.markdown(f"[More Info 🔗]({st.session_state.last_link})")
 
-# ---------- LIT HEART AT BOTTOM ----------
+# ---------- SMALL LIT HEART AT BOTTOM ----------
 st.markdown(
     """
     <style>
     .lit-heart {
         position: fixed;
-        bottom: 10px;
+        bottom: 5px;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 25px;
+        font-size: 20px;
         color: red;
         animation: pulse 1s infinite;
     }
@@ -141,5 +179,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
