@@ -2,6 +2,7 @@ import streamlit as st
 from gtts import gTTS
 import base64
 import wikipedia
+import sympy as sp   # ✅ use sp alias
 from sympy import symbols, Eq, solve, simplify
 from sympy.parsing.sympy_parser import parse_expr
 
@@ -19,6 +20,24 @@ def speak_text(text, lang="en"):
         </audio>
     """
     st.markdown(audio_html, unsafe_allow_html=True)
+
+# ---------- QUANTUM REPLY FUNCTION ----------
+def quantum_reply(user_input):
+    try:
+        expr = sp.sympify(user_input)
+        simplified = sp.simplify(expr)
+        return f"Simplified Result: {simplified}"
+    except:
+        if "=" in user_input:
+            try:
+                lhs, rhs = user_input.split("=")
+                x = sp.symbols('x')
+                eq = sp.Eq(sp.sympify(lhs), sp.sympify(rhs))
+                sol = sp.solve(eq, x)
+                return f"Solution: {sol}"
+            except:
+                return "Cannot solve this equation."
+        return "I couldn't parse this math problem."
 
 # ---------- SESSION STATE ----------
 if "chat_history" not in st.session_state:
@@ -113,22 +132,7 @@ if user_input:
         if "hi" in user_input_lower or "hello" in user_input_lower:
             bot_response = "Hi! I am your AI professor. How can I help you today?"
         else:
-            try:
-                expr = parse_expr(user_input_lower)
-                simplified = simplify(expr)
-                bot_response = f"✅ Simplified Result: {simplified}"
-            except:
-                try:
-                    if "=" in user_input:
-                        lhs, rhs = user_input.split("=")
-                        x = symbols('x')
-                        eq = Eq(parse_expr(lhs), parse_expr(rhs))
-                        sol = solve(eq, x)
-                        bot_response = f"✅ Solution: {sol}"
-                    else:
-                        bot_response = "Invalid math expression."
-                except:
-                    bot_response = "I couldn't parse the math problem."
+            bot_response = quantum_reply(user_input)
 
     elif st.session_state.feature == "Assistant":
         if "hi" in user_input_lower or "hello" in user_input_lower:
