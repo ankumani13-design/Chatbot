@@ -67,31 +67,8 @@ def expectation_value(matrix_list, state_list):
     except Exception as e:
         return f"Error: {e}"
 
-def explain_quantum_concept(concept):
-    concept = concept.lower()
-    theory = {
-        "wavefunction": ("A wavefunction Ψ represents a quantum state; |Ψ|^2 is probability density.", 
-                         "https://en.wikipedia.org/wiki/Wave_function"),
-        "operator": ("Operator acts on a wavefunction to extract physical info.", 
-                     "https://en.wikipedia.org/wiki/Quantum_operator"),
-        "eigenvalue": ("Eigenvalue λ satisfies ÔΨ = λΨ, representing measurable quantities.", 
-                       "https://en.wikipedia.org/wiki/Eigenvalues_and_eigenvectors"),
-        "schrodinger equation": ("HΨ = iħ ∂Ψ/∂t governs time evolution of quantum states.", 
-                                 "https://en.wikipedia.org/wiki/Schr%C3%B6dinger_equation"),
-        "commutator": ("[A,B]=AB-BA; non-zero commutator → observables cannot be simultaneously measured.", 
-                       "https://en.wikipedia.org/wiki/Commutator"),
-        "expectation value": ("Expectation value <Ψ|O|Ψ> gives average measured value of observable.", 
-                              "https://en.wikipedia.org/wiki/Expectation_value_(quantum_mechanics)")
-    }
-    if concept in theory:
-        desc, link = theory[concept]
-        return f"{desc} More info: [Link]({link})"
-    else:
-        return "Sorry, concept not found. Check [Quantum Mechanics Wikipedia](https://en.wikipedia.org/wiki/Quantum_mechanics)."
-
 # ---------- DISEASE DATABASE ----------
 disease_data = {
-    # Minor
     "cold": { "cause": "Viral infection of the upper respiratory tract.", "symptoms": "Sneezing, runny nose, mild fever, sore throat.", "prevention": "Wash hands, avoid cold exposure, stay warm.", "remedy": "Steam inhalation, rest, warm fluids."},
     "headache": {"cause": "Stress, dehydration, migraine.", "symptoms": "Pain in head, sensitivity to light, nausea.", "prevention": "Hydration, sleep well, reduce stress.", "remedy": "Hydration, rest, mild painkillers."},
     "fever": {"cause": "Often viral or bacterial infections.", "symptoms": "High body temperature, chills, body ache.", "prevention": "Maintain hygiene, stay hydrated.", "remedy": "Paracetamol, rest, consult doctor if persistent."},
@@ -102,9 +79,8 @@ disease_data = {
     "diarrhea": {"cause": "Bacterial/viral infection, food poisoning.", "symptoms": "Loose stools, dehydration.", "prevention": "Clean water, hygiene.", "remedy": "Hydration, ORS, consult doctor if severe."},
     "constipation": {"cause": "Low fiber diet, dehydration.", "symptoms": "Difficulty passing stools, bloating.", "prevention": "High-fiber diet, hydration, exercise.", "remedy": "Fiber intake, hydration, mild laxatives."},
     "allergies": { "cause": "Immune reaction to allergens.", "symptoms": "Sneezing, itching, rash.", "prevention": "Avoid allergens, antihistamines if needed.", "remedy": "Antihistamines, avoid triggers."},
-    # Moderate
     "diabetes": { "cause": "Body cannot produce or properly use insulin.", "symptoms": "Frequent urination, excessive thirst, fatigue.", "prevention": "Healthy diet, exercise, maintain weight.", "remedy": "Medication, insulin, lifestyle changes."},
-    "hypertension": {"cause": "High blood pressure due to lifestyle/genetics.", "symptoms": "Headache, dizziness, nosebleeds (sometimes asymptomatic).", "prevention": "Low salt diet, exercise, avoid alcohol/smoking.", "remedy": "Medication, lifestyle changes, monitor BP."},
+    "hypertension": {"cause": "High blood pressure due to lifestyle/genetics.", "symptoms": "Headache, dizziness, nosebleeds.", "prevention": "Low salt diet, exercise, avoid alcohol/smoking.", "remedy": "Medication, lifestyle changes, monitor BP."},
     "asthma": { "cause": "Inflammation of airways, triggers include allergens.", "symptoms": "Shortness of breath, wheezing, coughing.", "prevention": "Avoid triggers, regular checkups.", "remedy": "Inhalers, medications, avoid allergens."},
     "migraine": { "cause": "Neurological, triggered by stress, hormones, diet.", "symptoms": "Severe headache, nausea, sensitivity to light/sound.", "prevention": "Manage stress, avoid triggers, sleep well.", "remedy": "Painkillers, rest, lifestyle management."},
     "gastritis": { "cause": "Stomach lining inflammation due to infection or NSAIDs.", "symptoms": "Stomach pain, nausea, indigestion.", "prevention": "Avoid irritants, healthy diet.", "remedy": "Antacids, medications, diet adjustments."},
@@ -113,14 +89,13 @@ disease_data = {
     "bronchitis": { "cause": "Viral or bacterial infection of bronchi.", "symptoms": "Cough, mucus, shortness of breath.", "prevention": "Avoid smoking, good hygiene.", "remedy": "Rest, fluids, medications if bacterial."},
     "anemia": { "cause": "Low hemoglobin, nutritional deficiency or chronic disease.", "symptoms": "Fatigue, weakness, pallor.", "prevention": "Iron-rich diet, supplements if needed.", "remedy": "Iron supplements, diet changes."},
     "thyroid disorder": { "cause": "Hypo/Hyperthyroidism due to gland dysfunction.", "symptoms": "Fatigue, weight changes, temperature sensitivity.", "prevention": "Regular checkups, iodine-rich diet.", "remedy": "Medication, monitoring hormone levels."},
-    # Major
     "covid-19": { "cause": "Infection by SARS-CoV-2 virus.", "symptoms": "Fever, cough, shortness of breath, loss of taste/smell.", "prevention": "Vaccination, masks, social distancing.", "remedy": "Consult doctor, isolation, supportive care."},
     "heart disease": { "cause": "Coronary artery disease, plaque buildup.", "symptoms": "Chest pain, shortness of breath, fatigue.", "prevention": "Healthy diet, exercise, avoid smoking.", "remedy": "Medication, surgery, lifestyle changes."},
     "stroke": { "cause": "Interruption of blood flow to brain.", "symptoms": "Weakness, speech difficulty, facial droop.", "prevention": "Control BP, healthy lifestyle.", "remedy": "Immediate medical attention, rehabilitation."},
     "cancer": { "cause": "Uncontrolled cell growth in body tissues.", "symptoms": "Varies by type; lumps, fatigue, weight loss.", "prevention": "Avoid carcinogens, healthy lifestyle, screenings.", "remedy": "Surgery, chemotherapy, radiation therapy."},
     "ckd": { "cause": "Chronic kidney damage over time.", "symptoms": "Fatigue, swelling, decreased urine output.", "prevention": "Control BP/diabetes, hydration.", "remedy": "Dialysis, transplant, medications."},
     "liver disease": {"cause": "Hepatitis, alcohol, fatty liver.", "symptoms": "Jaundice, fatigue, nausea.", "prevention": "Avoid alcohol, vaccination, healthy diet.", "remedy": "Medications, lifestyle changes, transplant in severe cases."},
-    "diabetes1": {"cause": "Autoimmune destruction of insulin-producing cells.", "symptoms": "High blood sugar, fatigue, frequent urination.", "prevention": "No known prevention, early detection.", "remedy": "Insulin therapy, monitoring blood sugar."},
+    "diabetes1": { "cause": "Autoimmune destruction of insulin-producing cells.", "symptoms": "High blood sugar, fatigue, frequent urination.", "prevention": "No known prevention, early detection.", "remedy": "Insulin therapy, monitoring blood sugar."},
     "tb": { "cause": "Bacterial infection by Mycobacterium tuberculosis.", "symptoms": "Cough, weight loss, fever, night sweats.", "prevention": "Vaccination (BCG), avoid infected contact.", "remedy": "Long-term antibiotics."},
     "pneumonia": { "cause": "Lung infection (bacterial/viral).", "symptoms": "Fever, cough, shortness of breath, chest pain.", "prevention": "Vaccination, hygiene, avoid smoking.", "remedy": "Antibiotics, hospitalization if severe."},
     "hiv": { "cause": "Viral infection attacking the immune system.", "symptoms": "Flu-like symptoms initially; long-term immune suppression.", "prevention": "Safe sex, avoid sharing needles.", "remedy": "Antiretroviral therapy (ART)."}
@@ -256,18 +231,33 @@ if user_input:
 
     # ---------- ASSISTANT FEATURE ----------
     elif st.session_state.feature == "Assistant":
-        if "hi" in user_input_lower or "hello" in user_input_lower:
+        user_query = user_input.strip()
+        user_query_lower = user_query.lower()
+
+        if any(greet in user_query_lower for greet in ["hi","hello","hey"]):
             bot_response = "Hello! How's it going?"
             st.session_state.last_image = None
             st.session_state.last_link = None
         else:
             try:
-                summary = wikipedia.summary(user_input, sentences=2)
-                page = wikipedia.page(user_input)
+                summary = wikipedia.summary(user_query, sentences=2, auto_suggest=True, redirect=True)
+                page = wikipedia.page(user_query, auto_suggest=True, redirect=True)
                 bot_response = f"{summary} More info: [Link]({page.url})"
                 st.session_state.last_image = page.images[0] if page.images else None
                 st.session_state.last_link = page.url
-            except:
+            except wikipedia.DisambiguationError as e:
+                try:
+                    first_option = e.options[0]
+                    summary = wikipedia.summary(first_option, sentences=2)
+                    page = wikipedia.page(first_option)
+                    bot_response = f"{summary} More info: [Link]({page.url})"
+                    st.session_state.last_image = page.images[0] if page.images else None
+                    st.session_state.last_link = page.url
+                except:
+                    bot_response = f"This topic is ambiguous. Did you mean: {', '.join(e.options[:5])}?"
+                    st.session_state.last_image = None
+                    st.session_state.last_link = None
+            except wikipedia.PageError:
                 bot_response = "Sorry, I couldn't find information on that topic."
                 st.session_state.last_image = None
                 st.session_state.last_link = None
