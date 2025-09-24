@@ -136,7 +136,7 @@ if user_input:
 
     elif st.session_state.feature == "Assistant":
         if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hello! Ask me about any topic and I will fetch info from Wikipedia."
+            bot_response = "Hello! how's it going?"
             st.session_state.last_image = None
             st.session_state.last_link = None
         else:
@@ -191,3 +191,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
