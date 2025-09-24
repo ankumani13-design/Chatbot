@@ -2,24 +2,25 @@ import streamlit as st
 from gtts import gTTS
 import base64
 import wikipedia
-import sympy as sp   # ✅ use sp alias
-from sympy import symbols, Eq, solve, simplify
-from sympy.parsing.sympy_parser import parse_expr
+import sympy as sp
 
 # ---------- VOICE FUNCTION ----------
-def speak_text(text, lang="en"):
-    tts = gTTS(text=text, lang=lang, slow=False)
-    file_path = "voice.mp3"
-    tts.save(file_path)
-    with open(file_path, "rb") as f:
-        audio_bytes = f.read()
-    audio_base64 = base64.b64encode(audio_bytes).decode()
-    audio_html = f"""
-        <audio autoplay>
-            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-        </audio>
-    """
-    st.markdown(audio_html, unsafe_allow_html=True)
+def speak_text(text, lang="en-us"):
+    try:
+        tts = gTTS(text=text, lang=lang, slow=False)
+        file_path = "voice.mp3"
+        tts.save(file_path)
+        with open(file_path, "rb") as f:
+            audio_bytes = f.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+        audio_html = f"""
+            <audio autoplay>
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+        """
+        st.markdown(audio_html, unsafe_allow_html=True)
+    except Exception as e:
+        st.error(f"Voice error: {e}")
 
 # ---------- QUANTUM REPLY FUNCTION ----------
 def quantum_reply(user_input):
@@ -52,21 +53,43 @@ if "last_bot_response" not in st.session_state:
     st.session_state.last_bot_response = ""
 if "current_display_history" not in st.session_state:
     st.session_state.current_display_history = []
+if "voice_lang" not in st.session_state:
+    st.session_state.voice_lang = "en-us"  # default American English
 
 # ---------- SIDEBAR ----------
 with st.sidebar:
-    st.header("Select Feature")
+    st.header("⚙️ Settings")
+
+    # Feature selector
     new_feature = st.radio(
         "Features",
-        ("Doctor Help", "Math Solver", "Assistant")
+        ("Doctor Help", "Quantum Solver", "Assistant")
     )
-    # Clear main display if feature changes
     if new_feature != st.session_state.feature:
         st.session_state.feature = new_feature
         st.session_state.current_display_history = []
         st.session_state.last_bot_response = ""
         st.session_state.last_image = None
         st.session_state.last_link = None
+
+    st.divider()
+
+    # Voice Language selector
+    st.subheader("🎙️ Voice Language")
+    lang_options = {
+        "🇺🇸 English (US)": "en-us",
+        "🇬🇧 English (UK)": "en-uk",
+        "🇮🇳 English (India)": "en-in",
+        "🇫🇷 French": "fr",
+        "🇩🇪 German": "de",
+        "🇮🇹 Italian": "it",
+        "🇪🇸 Spanish": "es",
+        "🇯🇵 Japanese": "ja",
+        "🇰🇷 Korean": "ko",
+        "🇨🇳 Chinese (Mandarin)": "zh-cn"
+    }
+    selected_lang = st.selectbox("Select Language", list(lang_options.keys()))
+    st.session_state.voice_lang = lang_options[selected_lang]
 
     st.divider()
     st.header("📜 Chat History")
@@ -76,7 +99,7 @@ with st.sidebar:
 # ---------- DYNAMIC PAGE TITLE ----------
 page_titles = {
     "Doctor Help": "🤖 AI Doctor",
-    "Math Solver": "🤖 AI Professor",
+    "Quantum Solver": "🤖 Quantum Professor",
     "Assistant": "🤖 AI Assistant"
 }
 current_title = page_titles.get(st.session_state.feature, "🤖 AI Assistant")
@@ -94,7 +117,6 @@ for sender, msg in st.session_state.current_display_history:
 user_input = st.text_input("Type your message here...")
 
 if user_input:
-    # Save user message
     st.session_state.chat_history.append(("You", user_input))
     st.session_state.current_display_history.append(("You", user_input))
     user_input_lower = user_input.lower()
@@ -128,15 +150,15 @@ if user_input:
         else:
             bot_response = "I am here to help you with health-related questions."
 
-    elif st.session_state.feature == "Math Solver":
+    elif st.session_state.feature == "Quantum Solver":
         if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hi! I am your AI professor. How can I help you today?"
+            bot_response = "Hi! I am your Quantum Professor. Ask me a math problem."
         else:
             bot_response = quantum_reply(user_input)
 
     elif st.session_state.feature == "Assistant":
         if "hi" in user_input_lower or "hello" in user_input_lower:
-            bot_response = "Hello! how's it going?"
+            bot_response = "Hello! Ask me about any topic and I will fetch info from Wikipedia."
             st.session_state.last_image = None
             st.session_state.last_link = None
         else:
@@ -151,11 +173,11 @@ if user_input:
                 st.session_state.last_image = None
                 st.session_state.last_link = None
 
-    # Save bot response and speak
+    # Save response and speak
     st.session_state.chat_history.append(("Bot", bot_response))
     st.session_state.current_display_history.append(("Bot", bot_response))
     st.session_state.last_bot_response = bot_response
-    speak_text(bot_response)
+    speak_text(bot_response, lang=st.session_state.voice_lang)
 
 # ---------- SHOW BOT RESPONSE BELOW INPUT ----------
 if st.session_state.last_bot_response:
@@ -177,7 +199,7 @@ st.markdown(
         bottom: 5px;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 20px;  /* smaller heart */
+        font-size: 20px;
         color: red;
         animation: pulse 1s infinite;
     }
@@ -191,4 +213,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
