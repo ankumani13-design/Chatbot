@@ -176,7 +176,7 @@ if user_input:
         found = False
         for disease, info in disease_data.items():
             if disease in user_input_lower:
-                bot_response = f"**Disease:** {disease.title()} Cause: {info['cause']}\n• Symptoms: {info['symptoms']}\n• Prevention: {info['prevention']}\n• Remedy: {info['remedy']}"
+                bot_response = {disease.title()} Cause: {info['cause']}\n• Symptoms: {info['symptoms']}\n• Prevention: {info['prevention']}\n• Remedy: {info['remedy']}"
                 found = True
                 break
         if not found:
@@ -309,3 +309,4 @@ st.markdown("""
 </style>
 <div class="lit-heart">❤️</div>
 """, unsafe_allow_html=True)
+
